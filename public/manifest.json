@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
-  "name": "Extension",
+  "name": "Js-Injection",
   "author": "AnOldStory",
   "version": "1.0.1",
-  "description": "Extenstion",
+  "description": "Javascript Injection Extenstion Tool for Chromium-based Web browsers",
   "background": {
     "scripts": ["background.js"],
     "persistent": true
@@ -17,10 +17,9 @@
     }
   ],
   "browser_action": {
-    "default_popup": "popup.html",
-    "default_title": "React Ext"
+    "default_popup": "index.html",
+    "default_title": "Js-Injection"
   },
   "options_page": "index.html",
-  "permissions": ["tabs", "storage", "http://*/", "https://*/"],
-  "web_accessible_resources": ["js/libs/jquery.min.js"]
+  "permissions": ["tabs", "storage", "http://*/", "https://*/"]
 }
