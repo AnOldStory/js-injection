@@ -13,7 +13,6 @@ class Router extends Component {
   constructor(props) {
     super(props);
     this.Load = this.Load.bind(this);
-    this.Clear = this.Clear.bind(this);
   }
 
   componentDidMount() {
@@ -29,13 +28,6 @@ class Router extends Component {
         ListActions.set(storageList);
       }.bind(this)
     );
-  }
-
-  Clear() {
-    chrome.storage.sync.clear(() => {
-      console.log("Clear StorageList!");
-      this.Load();
-    });
   }
 
   render() {
@@ -59,7 +51,6 @@ class Router extends Component {
             />
           </Switch>
           <Route path="/:url" component={EditorContainer} />
-          <button onClick={this.Clear}>초기화</button>
         </>
       </HashRouter>
     );

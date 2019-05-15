@@ -1,18 +1,17 @@
-Js-Injection 
-==========
+# Js-Injection
 
-Description
------------
+## Description
+
 > This repository was made for Javascript Injection Extenstion Tool for Chromium-based Web browsers.
 
- 
-TODO
-----
+## TODO
+
 - [ ] Main design
 - [ ] Popup page
 - [ ] On/Off
 - [ ] Option page design
 - [ ] Popup page design
-- [ ] Save file 
-- [ ] Main Working
+- [ ] Save file
+- [x] Main Working
 - [ ] Program main image
+- [ ] Prevent duplication url collision

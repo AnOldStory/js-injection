@@ -54,7 +54,7 @@ class EditorContainer extends Component {
   LoadList() {
     this.setState({
       url: this.state.firstUrl,
-      code: this.props.storageList[encodeURIComponent(this.state.firstUrl)]
+      code: this.props.storageList[encodeURIComponent(this.state.firstUrl)][0]
     });
   }
 

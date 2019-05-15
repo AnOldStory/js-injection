@@ -18,7 +18,7 @@ class SaveButton extends Component {
           function() {
             console.log(storageUrl, "Deleted!");
             chrome.storage.sync.set(
-              { [encodeURIComponent(storageUrl)]: storageCode },
+              { [encodeURIComponent(storageUrl)]: [storageCode, 1] },
               function() {
                 console.log(storageUrl, storageCode, "Saved!");
               }
@@ -27,7 +27,7 @@ class SaveButton extends Component {
         );
       } else {
         chrome.storage.sync.set(
-          { [encodeURIComponent(storageUrl)]: storageCode },
+          { [encodeURIComponent(storageUrl)]: [storageCode, 1] },
           function() {
             console.log(storageUrl, storageCode, "Saved!");
           }
