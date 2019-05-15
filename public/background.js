@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         if (glob(key, sender.url)) {
           console.log(key, "실행완료", storageList[key]);
           chrome.tabs.executeScript(sender.tab.id, {
-            code: storageList[key]
+            code: storageList[key][0]
           });
         }
       }
