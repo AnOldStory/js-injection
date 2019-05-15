@@ -2,6 +2,10 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
+import { connect } from "react-redux";
+import * as listActions from "store/modules/lists";
+import { bindActionCreators } from "redux";
+
 import UrlLink from "component/UrlLink";
 
 import "./MainContainer.scss";
@@ -18,6 +22,17 @@ class MainContainer extends Component {
       console.log("Clear StorageList!");
       this.Load();
     });
+  }
+
+  Load() {
+    chrome.storage.sync.get(
+      null,
+      function(storageList) {
+        console.log("Loding StorageList!");
+        const { ListActions } = this.props;
+        ListActions.set(storageList);
+      }.bind(this)
+    );
   }
 
   Option() {
@@ -42,4 +57,11 @@ class MainContainer extends Component {
   }
 }
 
-export default MainContainer;
+export default connect(
+  value => ({
+    storageList: value.lists.get("all")
+  }),
+  dispatch => ({
+    ListActions: bindActionCreators(listActions, dispatch)
+  })
+)(MainContainer);
