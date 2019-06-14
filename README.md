@@ -4,6 +4,10 @@
 
 > This repository was made for Javascript Injection Extenstion Tool for Chromium-based Web browsers.
 
+## Download 
+
+https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni
+
 ## TODO
 
 - [ ] Main design
