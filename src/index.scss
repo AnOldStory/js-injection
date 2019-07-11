@@ -1,7 +1,30 @@
 @import "_variables.scss";
 
-
 body {
   background-color: $background-color;
   margin: 0;
+  color: $text-color;
+}
+
+a,
+.btn {
+  user-select: none;
+  text-decoration: none;
+  display: inline-flex;
+  margin: 3px;
+  padding: 3px;
+  border: 1px solid $btn-color;
+
+  transition: all 0.3s;
+}
+
+a:hover,
+.btn:hover {
+  background-color: $hover-color;
+  color: #fff;
+}
+
+a:link,
+a:visited {
+  color: $text-color;
 }

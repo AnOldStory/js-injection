@@ -42,16 +42,18 @@ class MainContainer extends Component {
   render() {
     return (
       <div className="main">
-        <div className="top">
-          <Link to="new">new</Link>
-        </div>
         <div className="bottom">
-          {Object.keys(this.props.storageList).map((url, i) => (
-            <UrlLink url={url} key={i} />
-          ))}
+          {Object.keys(this.props.storageList).map((url, i) =>
+            url ? <UrlLink url={url} key={i} /> : ""
+          )}
         </div>
-        <button onClick={this.Clear}>초기화</button>
-        <button onClick={this.Option}>새탭으로보기</button>
+        <Link to="new">새로운 규칙</Link>
+        <div className="btn" onClick={this.Clear}>
+          초기화
+        </div>
+        <div className="btn" onClick={this.Option}>
+          새탭으로보기
+        </div>
       </div>
     );
   }

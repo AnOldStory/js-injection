@@ -1,6 +1,6 @@
 /*global chrome*/
 import React, { Component } from "react";
-import { HashRouter, Route, Switch, Link } from "react-router-dom";
+import { HashRouter, Route, Switch } from "react-router-dom";
 
 import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
@@ -34,19 +34,15 @@ class Router extends Component {
     return (
       <HashRouter basename="/">
         <>
+          <div className="top">
+            <div className="title">JS-Injection</div>
+          </div>
           <Switch>
             <Route
               exact
               path="/"
               component={() => (
                 <MainContainer storageList={this.props.storageList} />
-              )}
-            />
-            <Route
-              component={() => (
-                <Link to="/" onClick={this.Load}>
-                  메인으로 돌아가기
-                </Link>
               )}
             />
           </Switch>

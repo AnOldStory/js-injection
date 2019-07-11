@@ -5,6 +5,9 @@ class SaveButton extends Component {
   constructor(props) {
     super(props);
     this.Save = this.Save.bind(this);
+    this.state = {
+      err: ""
+    };
   }
 
   Save() {
@@ -25,6 +28,9 @@ class SaveButton extends Component {
             );
           }
         );
+        this.setState({
+          err: "수정 완료!"
+        });
       } else {
         chrome.storage.sync.set(
           { [encodeURIComponent(storageUrl)]: [storageCode, 1] },
@@ -32,12 +38,22 @@ class SaveButton extends Component {
             console.log(storageUrl, storageCode, "Saved!");
           }
         );
+        this.setState({
+          err: "저장 완료!"
+        });
       }
     }
   }
 
   render() {
-    return <button onClick={this.Save}>저장하기</button>;
+    return (
+      <>
+        <div className="btn" onClick={this.Save}>
+          저장하기
+        </div>
+        {this.state.err}
+      </>
+    );
   }
 }
 

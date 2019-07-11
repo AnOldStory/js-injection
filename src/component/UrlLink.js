@@ -5,7 +5,9 @@ class UrlLink extends Component {
   render() {
     return (
       <div className="main-link">
-        <Link to={this.props.url}>{decodeURIComponent(this.props.url)}</Link>
+        <Link className="list-link" to={this.props.url}>
+          {decodeURIComponent(this.props.url)}
+        </Link>
       </div>
     );
   }

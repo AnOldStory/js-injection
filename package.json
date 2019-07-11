@@ -1,6 +1,6 @@
 {
-  "name": "extenstion",
-  "version": "0.1.0",
+  "name": "js-injection",
+  "version": "1.0.2",
   "private": true,
   "dependencies": {
     "immutable": "^4.0.0-rc.12",

@@ -1,11 +1,22 @@
 @import "_variables.scss";
 
 .main {
-  width: 250px;
+  min-width: 250px;
+  width: 100%;
   margin-left: auto;
   margin-right: auto;
 }
 
 .top {
   background: $top-color;
+  padding: 10px;
+}
+
+.title {
+  color: $title-color;
+  font-size: 15px;
+}
+
+.list-link {
+  width: calc(100% - 13.5px);
 }

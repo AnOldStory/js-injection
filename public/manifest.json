@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Js-Injection",
   "author": "AnOldStory",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Javascript Injection Extenstion Tool for Chromium-based Web browsers",
   "background": {
     "scripts": ["background.js"],
@@ -19,6 +19,9 @@
   "browser_action": {
     "default_popup": "index.html",
     "default_title": "Js-Injection"
+  },
+  "icons": {
+    "128": "icon128.png"
   },
   "options_page": "index.html",
   "permissions": ["tabs", "storage", "http://*/", "https://*/"]

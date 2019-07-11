@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
+import { Link } from "react-router-dom";
+
 import AceEditor from "react-ace";
 
 import SaveButton from "component/SaveButton";
@@ -61,12 +63,19 @@ class EditorContainer extends Component {
   render() {
     return (
       <div className="editor">
-        <input
-          type="text"
-          onChange={this.onChange}
-          placeholder="https://*.example.com/"
-          value={this.state.url}
-        />
+        <Link to="/" onClick={this.Load}>
+          메인으로 돌아가기
+        </Link>
+        <div>
+          적용할 도메인 규칙 :
+          <input
+            type="text"
+            onChange={this.onChange}
+            placeholder="https://*.example.com/"
+            value={this.state.url}
+          />
+        </div>
+
         <AceEditor
           mode="javascript"
           theme="monokai"
