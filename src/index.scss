@@ -6,7 +6,17 @@ body {
   color: $text-color;
 }
 
-a,
+a:link,
+a:visited {
+  user-select: none;
+  text-decoration: none;
+  color: $text-color;
+}
+
+.top:hover {
+  background-color: $top-hover-color;
+}
+
 .btn {
   cursor: pointer;
   user-select: none;
@@ -16,16 +26,10 @@ a,
   padding: 3px;
   border: 1px solid $btn-color;
 
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
-a:hover,
 .btn:hover {
   background-color: $hover-color;
   color: #fff;
-}
-
-a:link,
-a:visited {
-  color: $text-color;
 }

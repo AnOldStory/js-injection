@@ -47,7 +47,9 @@ class MainContainer extends Component {
             url ? <UrlLink url={url} key={i} /> : ""
           )}
         </div>
-        <Link to="new">새로운 규칙</Link>
+        <Link to="new" className="btn">
+          새로운 규칙
+        </Link>
         <div className="btn" onClick={this.Clear}>
           초기화
         </div>
