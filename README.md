@@ -7,6 +7,7 @@
 ## Download
 
 https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni
+https://store.whale.naver.com/detail/aibngojigjlagjankjgbcapehgmolkfa
 
 ## TODO
 
