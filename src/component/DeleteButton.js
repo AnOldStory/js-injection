@@ -34,7 +34,7 @@ class DeleteButton extends Component {
 
   render() {
     return (
-      <Link to="/">
+      <Link to="/" className="btn">
         <div onClick={this.Delete}>삭제하기</div>
       </Link>
     );

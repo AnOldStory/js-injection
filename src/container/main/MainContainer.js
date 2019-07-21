@@ -30,6 +30,7 @@ class MainContainer extends Component {
       function(storageList) {
         console.log("Loding StorageList!");
         const { ListActions } = this.props;
+        console.log(storageList);
         ListActions.set(storageList);
       }.bind(this)
     );

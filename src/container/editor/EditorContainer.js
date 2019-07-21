@@ -1,8 +1,6 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { Link } from "react-router-dom";
-
 import AceEditor from "react-ace";
 
 import SaveButton from "component/SaveButton";
@@ -63,9 +61,6 @@ class EditorContainer extends Component {
   render() {
     return (
       <div className="editor">
-        <Link to="/" onClick={this.Load}>
-          메인으로 돌아가기
-        </Link>
         <div>
           적용할 도메인 규칙 :
           <input
@@ -89,14 +84,17 @@ class EditorContainer extends Component {
         <SaveButton
           url={this.state.url}
           value={this.state.code}
-          isUrlChange={this.state.isUrlChange}
+          isUrlChange={
+            this.props.match.params.url === "new" ? 0 : this.state.isUrlChange
+          }
           firstUrl={this.state.firstUrl}
           ChangefirstUrl={this.ChangefirstUrl}
+          history={this.props.history}
         />
         {this.props.match.params.url === "new" ? (
           ""
         ) : (
-          <DeleteButton url={this.state.url} load={this.props.load} />
+          <DeleteButton url={this.state.url} />
         )}
       </div>
     );
