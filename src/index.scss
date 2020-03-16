@@ -25,14 +25,14 @@
 }
 
 /* big mode */
-@media screen and (min-width: 300px) {
+@media screen and (min-width: 600px) {
   .small {
     display: none;
   }
 }
 
 /* mini mode */
-@media screen and (max-width: 300px) {
+@media screen and (max-width: 600px) {
   .big {
     display: none;
   }

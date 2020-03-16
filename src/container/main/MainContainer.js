@@ -6,6 +6,13 @@ import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUpload,
+  faDownload,
+  faPlus,
+  faTrashAlt
+} from "@fortawesome/free-solid-svg-icons";
 import UrlLink from "component/UrlLink";
 
 import "./MainContainer.scss";
@@ -97,7 +104,9 @@ class MainContainer extends Component {
     return (
       <div className="main">
         <div className="big-btn">
-          <Link to="new"> 새로운 규칙 추가 </Link>
+          <Link to="new">
+            <FontAwesomeIcon icon={faPlus} size="lg" /> 새로운 규칙 추가
+          </Link>
         </div>
 
         <div className="bottom">
@@ -108,7 +117,7 @@ class MainContainer extends Component {
 
         <div className="big big-btn">
           <div className="btn" onClick={this.Clear}>
-            모든 규칙 삭제
+            <FontAwesomeIcon icon={faTrashAlt} size="lg" /> 모든 규칙 삭제
           </div>
         </div>
 
@@ -118,12 +127,14 @@ class MainContainer extends Component {
             className="btn"
             download="backup.json"
           >
-            백업 다운
+            <FontAwesomeIcon icon={faDownload} size="lg" /> 백업 다운
           </a>
         </div>
 
         <div className="big big-btn upload">
-          <div className="btn">백업 업로드</div>
+          <div className="btn">
+            <FontAwesomeIcon icon={faUpload} size="lg" /> 백업 업로드
+          </div>
           <input
             type="file"
             className="file btn"

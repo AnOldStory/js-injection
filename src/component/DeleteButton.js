@@ -7,7 +7,7 @@ import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { faMinus } from "@fortawesome/free-solid-svg-icons";
 
 class DeleteButton extends Component {
   constructor(props) {
@@ -36,7 +36,7 @@ class DeleteButton extends Component {
     return (
       <div className="big delete">
         <Link to="/" className="btn delete-inner" onClick={this.Delete}>
-          <FontAwesomeIcon icon={faTrashAlt} size="lg" /> 삭제하기
+          <FontAwesomeIcon icon={faMinus} size="lg" /> 삭제하기
         </Link>
       </div>
     );
