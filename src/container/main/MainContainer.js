@@ -2,6 +2,8 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
+import Config from "_variables";
+
 import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
@@ -51,11 +53,13 @@ class MainContainer extends Component {
       if (this.Validation(fileReader.result)) {
         let result = JSON.parse(fileReader.result);
         chrome.storage.sync.clear(() => {
-          for (let key in result) {
-            const { nickname, url, code, jquery } = result[key];
+          chrome.storage.sync.set({ version: Config.version }, () => {
+            for (let key in result) {
+              const { nickname, url, code, jquery } = result[key];
 
-            this.Save(key, nickname, url, code, jquery);
-          }
+              this.Save(key, nickname, url, code, jquery);
+            }
+          });
         });
       } else {
         this.setState({
@@ -72,8 +76,10 @@ class MainContainer extends Component {
       let result = JSON.parse(obj);
       for (let key in result) {
         const { nickname, url, code, jquery } = result[key];
-        if (!nickname || !url || !code || !jquery || !key) {
-          ans = false;
+        if (!nickname || !url || !code || !key) {
+          if (jquery !== false || jquery !== true) {
+            ans = false;
+          }
         }
       }
       return ans;

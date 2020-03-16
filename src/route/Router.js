@@ -2,6 +2,8 @@
 import React, { Component, version } from "react";
 import { HashRouter, Route, Switch, Link } from "react-router-dom";
 
+import Config from "_variables";
+
 import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
@@ -25,7 +27,7 @@ class Router extends Component {
 
   Load() {
     chrome.storage.sync.get("version", result => {
-      if (result.version !== "2.0.0") {
+      if (result.version !== Config.version) {
         this.updateDB();
       } else {
         chrome.storage.sync.get(null, storageList => {
@@ -40,7 +42,7 @@ class Router extends Component {
   updateDB() {
     chrome.storage.sync.get(null, storageList => {
       chrome.storage.sync.clear(() => {
-        chrome.storage.sync.set({ version: "2.0.0" }, () => {
+        chrome.storage.sync.set({ version: Config.version }, () => {
           /* v1 업데이트 호환 */
           Object.entries(storageList).forEach(([id, value], i) => {
             if (id !== "version")
