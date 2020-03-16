@@ -12,11 +12,11 @@ https://store.whale.naver.com/detail/aibngojigjlagjankjgbcapehgmolkfa
 ## TODO
 
 - [x] Main design
-- [ ] Popup page
+- [x] Popup page
 - [ ] On/Off
 - [x] Option page design
 - [x] Popup page design
-- [ ] Save file
+- [x] Save file
 - [x] Main Working
 - [x] Program main image
-- [ ] Prevent duplication url collision
+- [x] Prevent duplication url collision
