@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Js-Injection",
   "author": "AnOldStory",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "Javascript Injection Extenstion Tool for Chromium-based Web browsers",
   "background": {
     "scripts": ["background.js"],

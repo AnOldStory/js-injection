@@ -6,6 +6,9 @@ import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+
 import MainContainer from "container/main/MainContainer";
 import EditorContainer from "container/editor/EditorContainer";
 
@@ -13,6 +16,7 @@ class Router extends Component {
   constructor(props) {
     super(props);
     this.Load = this.Load.bind(this);
+    this.Option = this.Option.bind(this);
   }
 
   componentDidMount() {
@@ -23,11 +27,14 @@ class Router extends Component {
     chrome.storage.sync.get(
       null,
       function(storageList) {
-        console.log("Loding StorageList!");
         const { ListActions } = this.props;
         ListActions.set(storageList);
       }.bind(this)
     );
+  }
+
+  Option() {
+    window.open(chrome.runtime.getURL("index.html"));
   }
 
   render() {
@@ -35,20 +42,20 @@ class Router extends Component {
       <HashRouter basename="/">
         <>
           <Link to="/">
-            <div className="top">
+            <div className="top arrange">
               <div className="title">JS-Injection</div>
+
+              <div className="small">
+                <div className="setting" onClick={this.Option}>
+                  <FontAwesomeIcon icon={faCog} /> 설정
+                </div>
+              </div>
             </div>
           </Link>
           <Switch>
-            <Route
-              exact
-              path="/"
-              component={() => (
-                <MainContainer storageList={this.props.storageList} />
-              )}
-            />
+            <Route exact path="/" component={MainContainer} />
           </Switch>
-          <Route path="/:url" component={EditorContainer} />
+          <Route path="/:id" component={EditorContainer} />
         </>
       </HashRouter>
     );

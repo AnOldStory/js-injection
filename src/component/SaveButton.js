@@ -5,9 +5,13 @@ import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSave } from "@fortawesome/free-solid-svg-icons";
+
 class SaveButton extends Component {
   constructor(props) {
     super(props);
+    this.Sync = this.Sync.bind(this);
     this.Save = this.Save.bind(this);
     this.Load = this.Load.bind(this);
     this.state = {
@@ -15,51 +19,46 @@ class SaveButton extends Component {
     };
   }
 
-  Save() {
-    let storageUrl = this.props.url;
-    let storageCode = this.props.value;
-    this.props.ChangefirstUrl();
-    if (storageUrl !== "new") {
-      if (this.props.isUrlChange) {
-        chrome.storage.sync.remove(
-          encodeURIComponent(this.props.firstUrl),
-          function() {
-            console.log(storageUrl, "Deleted!");
-            chrome.storage.sync.set(
-              { [encodeURIComponent(storageUrl)]: [storageCode, 1] },
-              function() {
-                this.Load();
-                console.log(storageUrl, storageCode, "Saved!");
-              }.bind(this)
-            );
-          }.bind(this)
-        );
-        this.setState({
-          err: "수정 완료!"
-        });
-      } else {
-        chrome.storage.sync.set(
-          { [encodeURIComponent(storageUrl)]: [storageCode, 1] },
-          function() {
-            this.Load();
-            console.log(storageUrl, storageCode, "Saved!");
-            this.props.history.push("/");
-          }.bind(this)
-        );
-        this.setState({
-          err: "저장 완료!"
-        });
-      }
+  Sync() {
+    let { id, nickname, url, code, jquery } = this.props;
+    if (!url) {
+      url = "https://*.example.com/";
     }
+    if (!nickname) {
+      nickname = url;
+    }
+    if (this.props.match.params.id !== "new") {
+      chrome.storage.sync.remove(id, () => {
+        this.Save(id, nickname, url, code, jquery);
+      });
+    } else {
+      this.Save(id, nickname, url, code, jquery);
+    }
+  }
+
+  Save(id, nickname, url, code, jquery) {
+    chrome.storage.sync.set(
+      {
+        [id]: {
+          nickname: nickname,
+          url: url,
+          code: code,
+          jquery: jquery
+        }
+      },
+      () => {
+        this.Load();
+      }
+    );
   }
 
   Load() {
     chrome.storage.sync.get(
       null,
       function(storageList) {
-        console.log("Loding StorageList!");
         const { ListActions } = this.props;
         ListActions.set(storageList);
+        this.props.history.push("/");
       }.bind(this)
     );
   }
@@ -67,8 +66,10 @@ class SaveButton extends Component {
   render() {
     return (
       <>
-        <div className="btn" onClick={this.Save}>
-          저장하기
+        <div className="big-btn">
+          <div className="btn" onClick={this.Sync}>
+            <FontAwesomeIcon icon={faSave} size="lg" /> 저장하기
+          </div>
         </div>
         {this.state.err}
       </>

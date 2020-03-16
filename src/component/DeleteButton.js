@@ -6,6 +6,9 @@ import { connect } from "react-redux";
 import * as listActions from "store/modules/lists";
 import { bindActionCreators } from "redux";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+
 class DeleteButton extends Component {
   constructor(props) {
     super(props);
@@ -14,9 +17,7 @@ class DeleteButton extends Component {
   }
 
   Delete() {
-    let storageUrl = this.props.url;
-    chrome.storage.sync.remove(encodeURIComponent(storageUrl), () => {
-      console.log(storageUrl, "Deleted!");
+    chrome.storage.sync.remove(this.props.id, () => {
       this.Load();
     });
   }
@@ -25,7 +26,6 @@ class DeleteButton extends Component {
     chrome.storage.sync.get(
       null,
       function(storageList) {
-        console.log("Loding StorageList!");
         const { ListActions } = this.props;
         ListActions.set(storageList);
       }.bind(this)
@@ -34,9 +34,11 @@ class DeleteButton extends Component {
 
   render() {
     return (
-      <Link to="/" className="btn">
-        <div onClick={this.Delete}>삭제하기</div>
-      </Link>
+      <div className="big delete">
+        <Link to="/" className="btn delete-inner" onClick={this.Delete}>
+          <FontAwesomeIcon icon={faTrashAlt} size="lg" /> 삭제하기
+        </Link>
+      </div>
     );
   }
 }

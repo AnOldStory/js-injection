@@ -1,5 +1,43 @@
 @import "_variables.scss";
 
+/* SCROLL */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+/* 스크롤바의 width */
+
+::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+}
+
+/* 스크롤바의 전체 배경색 */
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #a1a1a1, #a1a1a1);
+}
+
+/* 스크롤바 색 */
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* big mode */
+@media screen and (min-width: 300px) {
+  .small {
+    display: none;
+  }
+}
+
+/* mini mode */
+@media screen and (max-width: 300px) {
+  .big {
+    display: none;
+  }
+}
+
 body {
   background-color: $background-color;
   margin: 0;
@@ -10,26 +48,40 @@ a:link,
 a:visited {
   user-select: none;
   text-decoration: none;
-  color: $text-color;
 }
 
 .top:hover {
   background-color: $top-hover-color;
 }
 
+.arrange {
+  display: flex;
+  justify-content: space-between;
+}
+
+.delete {
+  padding: 5px;
+  white-space: nowrap;
+}
+
+.delete:hover {
+  color: $hover-color;
+  background: $delete-hover;
+}
+
+.delete-inner {
+  padding: 5px;
+}
+
 .btn {
   cursor: pointer;
   user-select: none;
   text-decoration: none;
-  display: inline-flex;
-  margin: 3px;
-  padding: 3px;
-  border: 1px solid $btn-color;
 
   transition: all 0.2s;
 }
 
-.btn:hover {
-  background-color: $hover-color;
-  color: #fff;
+.btn-margin {
+  margin: 3px;
+  border: 1px solid $btn-color;
 }

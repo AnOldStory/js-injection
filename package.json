@@ -3,6 +3,9 @@
   "version": "1.0.3",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.27",
+    "@fortawesome/free-solid-svg-icons": "^5.12.1",
+    "@fortawesome/react-fontawesome": "^0.1.9",
     "immutable": "^4.0.0-rc.12",
     "node-sass": "^4.11.0",
     "npm": "^6.9.0",

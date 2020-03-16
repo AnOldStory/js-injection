@@ -5,4 +5,46 @@
   width: calc(100% - 13.5px);
   margin-left: auto;
   margin-right: auto;
+  margin: 3px;
+}
+
+.block-name {
+  margin: 0px 4px 4px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  font-weight: 700;
+  color: $block-name;
+}
+
+.block-name::after {
+  margin-left: 15px;
+  display: inline-block;
+  content: "";
+  vertical-align: middle;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    $block-name-line-start,
+    $block-name-line-end
+  );
+  width: 100%;
+}
+
+.block {
+  width: 98%;
+  border: none;
+  padding: 4px;
+  border-radius: 15px;
+}
+
+input[type="checkbox"] {
+  vertical-align: text-top;
+}
+
+.options {
+  margin-left: 4px;
+}
+
+#brace-editor {
+  margin: 4px;
 }

@@ -1,11 +1,13 @@
+/*global chrome*/
 import React, { Component } from "react";
+
 import { connect } from "react-redux";
+import * as listActions from "store/modules/lists";
+import { bindActionCreators } from "redux";
 
 import AceEditor from "react-ace";
 
 import SaveButton from "component/SaveButton";
-import DeleteButton from "component/DeleteButton";
-
 import "brace/mode/javascript";
 import "brace/theme/monokai";
 
@@ -15,27 +17,35 @@ class EditorContainer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      firstUrl: decodeURIComponent(this.props.match.params.url),
+      id: this.props.match.params.id,
+      nickname: "",
       url: "",
       code: "",
-      isUrlChange: 0
+      jquery: false
     };
     this.onChange = this.onChange.bind(this);
     this.onCodeChange = this.onCodeChange.bind(this);
+    this.onCheckChange = this.onCheckChange.bind(this);
     this.LoadList = this.LoadList.bind(this);
-    this.ChangefirstUrl = this.ChangefirstUrl.bind(this);
   }
 
   componentDidMount() {
-    if (this.props.match.params.url !== "new") {
+    if (this.props.match.params.id !== "new") {
       this.LoadList();
+    } else {
+      let maxnum = 0;
+      Object.keys(this.props.storageList).forEach(i => {
+        if (maxnum < Number(i)) maxnum = Number(i);
+      });
+      this.setState({
+        id: maxnum + 1
+      });
     }
   }
 
   onChange(e) {
     this.setState({
-      isUrlChange: 1,
-      url: e.target.value
+      [e.target.name]: e.target.value
     });
   }
 
@@ -45,35 +55,71 @@ class EditorContainer extends Component {
     });
   }
 
-  ChangefirstUrl() {
+  onCheckChange(e) {
     this.setState({
-      firstUrl: decodeURIComponent(this.state.url)
+      [e.target.name]: e.target.checked
     });
   }
 
   LoadList() {
-    this.setState({
-      url: this.state.firstUrl,
-      code: this.props.storageList[encodeURIComponent(this.state.firstUrl)][0]
-    });
+    chrome.storage.sync.get(
+      null,
+      function(storageList) {
+        const { ListActions } = this.props;
+        ListActions.set(storageList);
+        this.setState({
+          id: this.state.id,
+          ...storageList[this.state.id]
+        });
+      }.bind(this)
+    );
   }
 
   render() {
     return (
       <div className="editor">
-        <div>
-          적용할 도메인 규칙 :
+        <div className="nickname">
+          <div className="block-name">규칙 이름</div>
+          <input
+            type="text"
+            onChange={this.onChange}
+            placeholder="example 사이트 스크립트"
+            value={this.state.nickname}
+            name="nickname"
+            className="block"
+          />
+        </div>
+
+        <div className="url">
+          <div className="block-name">적용할 도메인</div>
           <input
             type="text"
             onChange={this.onChange}
             placeholder="https://*.example.com/"
             value={this.state.url}
+            name="url"
+            className="block"
           />
         </div>
-
+        <div className="option">
+          <div className="block-name">추가 옵션</div>
+          <label className="options">
+            Latest Jquery 자동 추가:
+            <input
+              type="checkbox"
+              checked={this.state.jquery}
+              onChange={this.onCheckChange}
+              name="jquery"
+            />{" "}
+            (이미 존재하는 사이트의 Jquery와 충돌할 수 있습니다.)
+          </label>
+        </div>
+        <div className="block-name"> 코드 </div>
         <AceEditor
           mode="javascript"
           theme="monokai"
+          height="350px"
+          width="99%"
           onChange={this.onCodeChange}
           setOptions={{
             tabSize: 2
@@ -81,26 +127,22 @@ class EditorContainer extends Component {
           value={this.state.code}
           editorProps={{ $blockScrolling: true }}
         />
+
         <SaveButton
-          url={this.state.url}
-          value={this.state.code}
-          isUrlChange={
-            this.props.match.params.url === "new" ? 0 : this.state.isUrlChange
-          }
-          firstUrl={this.state.firstUrl}
-          ChangefirstUrl={this.ChangefirstUrl}
+          {...this.state}
+          match={this.props.match}
           history={this.props.history}
         />
-        {this.props.match.params.url === "new" ? (
-          ""
-        ) : (
-          <DeleteButton url={this.state.url} />
-        )}
       </div>
     );
   }
 }
 
-export default connect(value => ({
-  storageList: value.lists.get("all")
-}))(EditorContainer);
+export default connect(
+  value => ({
+    storageList: value.lists.get("all")
+  }),
+  dispatch => ({
+    ListActions: bindActionCreators(listActions, dispatch)
+  })
+)(EditorContainer);

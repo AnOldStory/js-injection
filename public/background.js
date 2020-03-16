@@ -22,18 +22,21 @@ chrome.storage.onChanged.addListener(function() {
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   // console.log("메시지", message); // state, action
-  console.log("센더", sender);
-  //console.log("대답", sendResponse); // callback
-  if (message.state === "pageLoaded") {
-    if (message.action === "run") {
-      for (let key in storageList) {
-        if (glob(key, sender.url)) {
-          console.log(key, "실행완료", storageList[key]);
-          chrome.tabs.executeScript(sender.tab.id, {
-            code: storageList[key][0]
-          });
+  // console.log("센더", sender);
+  // console.log("대답", sendResponse); // callback
+  let query = false;
+  if (message.state === "beforeLoad") {
+    for (let key in storageList) {
+      if (glob(storageList[key].url, sender.url)) {
+        chrome.tabs.executeScript(sender.tab.id, {
+          code: storageList[key].code,
+          runAt: "document_idle"
+        });
+        if (storageList[key].jquery) {
+          query = true;
         }
       }
     }
+    sendResponse(query);
   }
 });

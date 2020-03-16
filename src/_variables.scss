@@ -1,13 +1,36 @@
 $background-color: #f7f6f4;
 
-$top-color: #dadada;
-
-$title-color: #666;
+$hover-color: #7ab8ff;
 
 $btn-color: #d7d7d7;
 
 $text-color: #666;
 
-$hover-color: #7ab8ff;
+$top-color: #dadada;
+$top-hover-color: darken($top-color, 5%);
 
-$top-hover-color: darken($top-color, 10%);
+$title-color: #666;
+
+$setting-color: #9574ca;
+$setting-border: #8a8a8a;
+$setting-background-hover: darken($top-color, 20%);
+
+$big-btn-start: #9574ca;
+$big-btn-end: #b09ad3;
+$big-btn-color: white;
+
+$big-btn-start-hover: darken($big-btn-start, 12);
+$big-btn-end-hover: darken($big-btn-end, 12);
+$big-btn-color-hover: darken($big-btn-color, 12);
+
+$delete-hover: #ff8d8d;
+
+$block-name: rgba(134, 83, 216, 0.952);
+$block-name-line-start: rgba(0, 225, 255, 0.35);
+$block-name-line-end: rgba(255, 0, 225, 0.35);
+
+$block-background: #f8f8f8;
+
+@mixin box-shadow() {
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
