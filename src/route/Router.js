@@ -1,5 +1,5 @@
 /*global chrome*/
-import React, { Component } from "react";
+import React, { Component, version } from "react";
 import { HashRouter, Route, Switch, Link } from "react-router-dom";
 
 import { connect } from "react-redux";
@@ -24,17 +24,53 @@ class Router extends Component {
   }
 
   Load() {
-    chrome.storage.sync.get(
-      null,
-      function(storageList) {
-        const { ListActions } = this.props;
-        ListActions.set(storageList);
-      }.bind(this)
-    );
+    chrome.storage.sync.get("version", result => {
+      if (result.version !== "2.0.0") {
+        this.updateDB();
+      } else {
+        chrome.storage.sync.get(null, storageList => {
+          const { ListActions } = this.props;
+          delete storageList.version;
+          ListActions.set(storageList);
+        });
+      }
+    });
+  }
+
+  updateDB() {
+    chrome.storage.sync.get(null, storageList => {
+      chrome.storage.sync.clear(() => {
+        chrome.storage.sync.set({ version: "2.0.0" }, () => {
+          /* v1 업데이트 호환 */
+          Object.entries(storageList).forEach(([id, value], i) => {
+            if (id !== "version")
+              this.Save(
+                i,
+                decodeURIComponent(id),
+                decodeURIComponent(id),
+                value[0],
+                false
+              );
+          });
+          this.Load();
+        });
+      });
+    });
   }
 
   Option() {
     window.open(chrome.runtime.getURL("index.html"));
+  }
+
+  Save(id, nickname, url, code, jquery) {
+    chrome.storage.sync.set({
+      [id]: {
+        nickname: nickname,
+        url: url,
+        code: code,
+        jquery: jquery
+      }
+    });
   }
 
   render() {

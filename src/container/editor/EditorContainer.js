@@ -62,17 +62,15 @@ class EditorContainer extends Component {
   }
 
   LoadList() {
-    chrome.storage.sync.get(
-      null,
-      function(storageList) {
-        const { ListActions } = this.props;
-        ListActions.set(storageList);
-        this.setState({
-          id: this.state.id,
-          ...storageList[this.state.id]
-        });
-      }.bind(this)
-    );
+    chrome.storage.sync.get(null, storageList => {
+      const { ListActions } = this.props;
+      delete storageList.version;
+      ListActions.set(storageList);
+      this.setState({
+        id: this.state.id,
+        ...storageList[this.state.id]
+      });
+    });
   }
 
   render() {

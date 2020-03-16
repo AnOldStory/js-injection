@@ -53,14 +53,12 @@ class SaveButton extends Component {
   }
 
   Load() {
-    chrome.storage.sync.get(
-      null,
-      function(storageList) {
-        const { ListActions } = this.props;
-        ListActions.set(storageList);
-        this.props.history.push("/");
-      }.bind(this)
-    );
+    chrome.storage.sync.get(null, storageList => {
+      const { ListActions } = this.props;
+      delete storageList.version;
+      ListActions.set(storageList);
+      this.props.history.push("/");
+    });
   }
 
   render() {

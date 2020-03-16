@@ -38,13 +38,11 @@ class MainContainer extends Component {
   }
 
   Load() {
-    chrome.storage.sync.get(
-      null,
-      function(storageList) {
-        const { ListActions } = this.props;
-        ListActions.set(storageList);
-      }.bind(this)
-    );
+    chrome.storage.sync.get(null, storageList => {
+      const { ListActions } = this.props;
+      delete storageList.version;
+      ListActions.set(storageList);
+    });
   }
 
   Upload(e) {
