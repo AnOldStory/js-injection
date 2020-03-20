@@ -49,6 +49,7 @@ class MainContainer extends Component {
 
   Upload(e) {
     let fileReader = new FileReader();
+    console.log(fileReader.readyState);
     fileReader.onload = () => {
       if (this.Validation(fileReader.result)) {
         let result = JSON.parse(fileReader.result);
@@ -59,6 +60,9 @@ class MainContainer extends Component {
 
               this.Save(key, nickname, url, code, jquery);
             }
+            this.setState({
+              err: ""
+            });
           });
         });
       } else {
@@ -127,7 +131,10 @@ class MainContainer extends Component {
 
         <div className="big big-btn">
           <a
-            href={"data:text/json," + JSON.stringify(this.props.storageList)}
+            href={
+              "data:text/json," +
+              encodeURIComponent(JSON.stringify(this.props.storageList))
+            }
             className="btn"
             download="backup.json"
           >

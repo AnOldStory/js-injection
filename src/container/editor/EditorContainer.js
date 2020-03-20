@@ -102,7 +102,7 @@ class EditorContainer extends Component {
         <div className="option">
           <div className="block-name">추가 옵션</div>
           <label className="options">
-            Latest Jquery 자동 추가:
+            Latest jQuery 자동 추가:
             <input
               type="checkbox"
               checked={this.state.jquery}
