@@ -27,13 +27,15 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   let query = false;
   if (message.state === "beforeLoad") {
     for (let key in storageList) {
-      if (glob(storageList[key].url, sender.url)) {
-        chrome.tabs.executeScript(sender.tab.id, {
-          code: storageList[key].code,
-          runAt: "document_idle"
-        });
-        if (storageList[key].jquery) {
-          query = true;
+      if (key !== "version") {
+        if (glob(storageList[key].url, sender.url)) {
+          chrome.tabs.executeScript(sender.tab.id, {
+            code: storageList[key].code,
+            runAt: "document_idle"
+          });
+          if (storageList[key].jquery) {
+            query = true;
+          }
         }
       }
     }
