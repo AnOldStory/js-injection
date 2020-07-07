@@ -8,7 +8,7 @@
     "@fortawesome/react-fontawesome": "^0.1.9",
     "immutable": "^4.0.0-rc.12",
     "node-sass": "^4.11.0",
-    "npm": "^6.9.0",
+    "npm": "^6.14.6",
     "react": "^16.8.6",
     "react-ace": "^6.5.0",
     "react-dom": "^16.8.6",
