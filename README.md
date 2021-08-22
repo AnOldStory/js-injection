@@ -12,7 +12,7 @@
 
 ## Description
 
-> This repository was made for Javascript Injection Extenstion Tool for Chromium-based Web browsers.
+> Javascript Injection Extenstion Tool for Chromium-based Web browsers.
 
 ## Download
 
