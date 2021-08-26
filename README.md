@@ -16,7 +16,7 @@
 
 ## Download
 
-Chrome Browser → [Chrome Web Store](https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffn)
+Chrome Browser → [Chrome Web Store](https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni)
 
 Whale Browser → [Whale Store](https://store.whale.naver.com/detail/aibngojigjlagjankjgbcapehgmolkfa)
 
