@@ -121,7 +121,7 @@ function EditorContainer() {
           height="350px"
           width="99%"
           onChange={setCode}
-          setOptions={{ tabSize: 2, enableLiveAutocompletion: true }}
+          setOptions={{ tabSize: 2, enableLiveAutocompletion: true, useWorker: false }}
           value={code}
           editorProps={{ $blockScrolling: true }}
         />

@@ -33,10 +33,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     let injectJquery = false;
     const injections = [];
 
+    /* Skip non-injectable URLs (chrome://, chrome-extension://, about:, etc.) */
+    const url = sender.url ?? "";
+    const isInjectable = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("file://");
+    if (!isInjectable) {
+      sendResponse(false);
+      return true;
+    }
+
     for (const key in storageList) {
       if (key === "version") continue;
       const item = storageList[key];
-      if (!item?.url || !sender.url) continue;
+      if (!item?.url) continue;
 
       if (glob(item.url, sender.url)) {
         // FIX #6: new Function() → func + args 패턴으로 CSP 안전하게 실행
