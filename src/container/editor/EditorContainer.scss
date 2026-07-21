@@ -1,4 +1,4 @@
-@import "_variables.scss";
+@use "../../variables" as *;
 
 .editor {
   min-width: 500px;

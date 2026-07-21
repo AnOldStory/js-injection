@@ -1,19 +1,14 @@
-import { createAction, handleActions } from "redux-actions";
-import { Map } from "immutable";
+import { createSlice } from "@reduxjs/toolkit";
 
-const SET = "lists/SET";
-
-export const set = createAction(SET, value => value);
-
-const initialState = Map({
-  all: {}
+const listsSlice = createSlice({
+  name: "lists",
+  initialState: { all: {} },
+  reducers: {
+    set(state, action) {
+      state.all = action.payload;
+    }
+  }
 });
 
-export default handleActions(
-  {
-    [SET]: (state, action) => {
-      return state.set("all", action.payload);
-    }
-  },
-  initialState
-);
+export const { set } = listsSlice.actions;
+export default listsSlice.reducer;
