@@ -1,0 +1,66 @@
+name: Release & Publish to Chrome Web Store
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # v3.0.0 같은 태그 push 시 자동 실행
+
+jobs:
+  release:
+    name: Build, Release, Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. 코드 체크아웃 ──────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js 설정 ──────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      # ── 3. 의존성 설치 ───────────────────────────────────────────
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      # ── 4. 프로덕션 빌드 ─────────────────────────────────────────
+      - name: Build
+        run: npm run build
+
+      # ── 5. dist/ 폴더를 zip으로 압축 ─────────────────────────────
+      - name: Create zip
+        run: |
+          cd dist
+          python3 -c "
+          import zipfile, os
+          with zipfile.ZipFile('../extension.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+              for root, dirs, files in os.walk('.'):
+                  for file in files:
+                      filepath = os.path.join(root, file)
+                      arcname = os.path.relpath(filepath, '.')
+                      zf.write(filepath, arcname)
+          print('extension.zip created')
+          "
+
+      # ── 6. GitHub Release 생성 + zip 첨부 ────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: extension.zip
+          generate_release_notes: true   # 이전 태그 이후 커밋으로 자동 릴리즈 노트 생성
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 7. Chrome Web Store 업로드 & 게시 ────────────────────────
+      - name: Publish to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: extension.zip
+          extension-id: mijnijeicfcodlijkmafknapfcilffni
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publish: true   # false로 하면 업로드만 하고 게시는 수동으로
