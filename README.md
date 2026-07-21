@@ -4,7 +4,7 @@
 
 # Js-Injection
 
-**Chromium 기반 브라우저를 위한 JavaScript 인젝션 확장 프로그램**
+**JavaScript Injection Extension for Chromium-based Browsers**
 
 [![Version](https://img.shields.io/badge/version-v3.0.0-6C63FF?style=for-the-badge)](https://github.com/AnOldStory/Js-Injection/releases)
 [![Manifest](https://img.shields.io/badge/Manifest-V3-4CAF50?style=for-the-badge&logo=googlechrome)](https://developer.chrome.com/docs/extensions/mv3/)
@@ -14,39 +14,39 @@
 
 <br/>
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-설치-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni)
-[![Whale Store](https://img.shields.io/badge/Whale%20Store-설치-03C75A?style=flat-square&logo=naver&logoColor=white)](https://store.whale.naver.com/detail/aibngojigjlagjankjgbcapehgmolkfa)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](https://chrome.google.com/webstore/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni)
+[![Whale Store](https://img.shields.io/badge/Whale%20Store-Install-03C75A?style=flat-square&logo=naver&logoColor=white)](https://store.whale.naver.com/detail/aibngojigjlagjankjgbcapehgmolkfa)
 
 </div>
 
 ---
 
-## ✨ 소개
+## ✨ Overview
 
-**Js-Injection**은 원하는 웹사이트에 JavaScript 코드를 자동으로 삽입하는 Chrome / Naver Whale 확장 프로그램입니다.
+**Js-Injection** is a Chrome / Naver Whale extension that automatically injects JavaScript code into any website you choose.
 
-URL 패턴과 코드를 등록해두면, 해당 사이트 방문 시 자동으로 스크립트가 실행됩니다.
+Simply register a URL pattern and a script — the extension will execute it every time you visit a matching page.
 
-- 반복적인 JS 작업 자동화
-- 사이트 UI 커스터마이징
-- 디버깅 및 개발 편의 기능 주입
-
----
-
-## 🚀 주요 기능
-
-| 기능 | 설명 |
-|------|------|
-| 📝 **규칙 추가/수정/삭제** | URL 패턴별 JS 코드 관리 |
-| 🔄 **자동 실행** | 등록된 URL 방문 시 즉시 실행 |
-| ☁️ **클라우드 동기화** | `chrome.storage.sync`로 기기 간 자동 동기화 |
-| 📦 **백업/복원** | JSON 파일로 규칙 내보내기/가져오기 |
-| ⚡ **jQuery 자동 주입** | 옵션 활성화 시 jQuery 자동 삽입 |
-| 🌐 **Glob 패턴** | `https://*.example.com/*` 형태의 와일드카드 지원 |
+- Automate repetitive JavaScript tasks
+- Customize website UI and behavior
+- Inject debugging or development utilities
 
 ---
 
-## 📥 설치
+## 🚀 Features
+
+| Feature | Description |
+|---------|-------------|
+| 📝 **Rule Management** | Add, edit, and delete JS rules per URL pattern |
+| 🔄 **Auto Execution** | Scripts run automatically on matching page visits |
+| ☁️ **Cloud Sync** | Rules synced across devices via `chrome.storage.sync` |
+| 📦 **Backup & Restore** | Export and import rules as a JSON file |
+| ⚡ **jQuery Injection** | Automatically inject jQuery with a single toggle |
+| 🌐 **Glob Patterns** | Wildcard URL matching (e.g. `https://*.example.com/*`) |
+
+---
+
+## 📥 Installation
 
 <table>
   <tr>
@@ -65,38 +65,38 @@ URL 패턴과 코드를 등록해두면, 해당 사이트 방문 시 자동으�
 
 ---
 
-## 🛠 개발 환경 설정
+## 🛠 Development Setup
 
 ```bash
-# 저장소 클론
+# Clone the repository
 git clone https://github.com/AnOldStory/Js-Injection.git
 cd Js-Injection
 
-# 의존성 설치
+# Install dependencies
 npm install
 
-# 개발 서버 실행
+# Start dev server
 npm run dev
 
-# 프로덕션 빌드
+# Production build
 npm run build
 
-# 린트
+# Lint
 npm run lint
 ```
 
-### Chrome에서 로드 (개발 모드)
+### Load in Chrome (Developer Mode)
 
-1. `chrome://extensions/` 이동
-2. 우측 상단 **개발자 모드** ON
-3. **압축해제된 확장 프로그램 로드** → `dist/` 폴더 선택
+1. Navigate to `chrome://extensions/`
+2. Enable **Developer mode** (top right toggle)
+3. Click **Load unpacked** → select the `dist/` folder
 
 ---
 
-## 🏗 기술 스택
+## 🏗 Tech Stack
 
-| 분류 | 기술 |
-|------|------|
+| Category | Technology |
+|----------|------------|
 | **Frontend** | React 19, Redux Toolkit |
 | **Build** | Vite 6, Sass |
 | **Extension** | Manifest V3, Chrome Scripting API |
@@ -105,12 +105,12 @@ npm run lint
 
 ---
 
-## 📦 릴리즈
+## 📦 Release
 
-태그를 push하면 GitHub Actions가 자동으로:
-1. 프로덕션 빌드
-2. GitHub Release 생성 + zip 첨부
-3. Chrome Web Store 자동 업로드
+Pushing a version tag triggers GitHub Actions to automatically:
+1. Build for production
+2. Create a GitHub Release with the zip attached
+3. Upload to the Chrome Web Store
 
 ```bash
 git tag -a v3.0.1 -m "Fix: ..."
@@ -137,25 +137,24 @@ This extension **does not collect, store, transmit, or share any personal data**
 
 ---
 
-## 📋 TODO
+## 📋 Roadmap
 
-- [x] 메인 화면 디자인
-- [x] 팝업 페이지
-- [x] 옵션 페이지 디자인
-- [x] 파일 저장 (백업/복원)
-- [x] 핵심 기능 구현
-- [x] Manifest V3 마이그레이션
-- [x] React 19 업그레이드
-- [x] Chrome Web Store 자동 배포 CI/CD
-- [ ] 규칙 On/Off 토글
+- [x] Main UI design
+- [x] Popup & Options page
+- [x] Backup / Restore
+- [x] Core injection logic
+- [x] Manifest V3 migration
+- [x] React 19 upgrade
+- [x] Automated Chrome Web Store CI/CD
+- [ ] Rule On/Off toggle
 
 ---
 
-## 🤝 기여
+## 🤝 Contributing
 
-Issue 및 Pull Request 환영합니다!
+Issues and Pull Requests are welcome!
 
-👉 [GitHub Issues](https://github.com/AnOldStory/Js-Injection/issues)
+👉 [Open an Issue](https://github.com/AnOldStory/Js-Injection/issues)
 
 ---
 
