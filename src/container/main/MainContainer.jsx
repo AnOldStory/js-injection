@@ -18,7 +18,7 @@ import UrlLink from "component/UrlLink";
 import "./MainContainer.scss";
 
 function MainContainer() {
-  const storageList = useSelector((state) => state.lists.all);
+  const storageList = useSelector((state) => state.all);
   const { loadStorage } = useStorage();
   const [err, setErr] = useState("");
 

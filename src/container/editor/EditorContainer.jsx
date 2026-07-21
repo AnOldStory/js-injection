@@ -21,7 +21,7 @@ const AceEditor = lazy(() =>
 function EditorContainer() {
   const { id: paramId } = useParams();
   const dispatch = useDispatch();
-  const storageList = useSelector((state) => state.lists.all);
+  const storageList = useSelector((state) => state.all);
 
   const [id, setId] = useState(paramId);
   const [nickname, setNickname] = useState("");
