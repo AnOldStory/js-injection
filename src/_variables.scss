@@ -1,3 +1,7 @@
+// Modern Sass: use @use instead of @import
+// (Dart Sass 3 compatible)
+@use "sass:color";
+
 $background-color: #f7f6f4;
 
 $hover-color: #7ab8ff;
@@ -7,21 +11,21 @@ $btn-color: #d7d7d7;
 $text-color: #666;
 
 $top-color: #dadada;
-$top-hover-color: darken($top-color, 5%);
+$top-hover-color: color.adjust($top-color, $lightness: -5%);
 
 $title-color: #666;
 
 $setting-color: #9574ca;
 $setting-border: #8a8a8a;
-$setting-background-hover: darken($top-color, 20%);
+$setting-background-hover: color.adjust($top-color, $lightness: -20%);
 
 $big-btn-start: #9574ca;
 $big-btn-end: #b09ad3;
 $big-btn-color: white;
 
-$big-btn-start-hover: darken($big-btn-start, 12);
-$big-btn-end-hover: darken($big-btn-end, 12);
-$big-btn-color-hover: darken($big-btn-color, 12);
+$big-btn-start-hover: color.adjust($big-btn-start, $lightness: -12%);
+$big-btn-end-hover: color.adjust($big-btn-end, $lightness: -12%);
+$big-btn-color-hover: color.adjust($big-btn-color, $lightness: -12%);
 
 $delete-hover: #ff8d8d;
 

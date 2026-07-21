@@ -1,44 +1,65 @@
-var storageList = {};
+/* Manifest V3 Service Worker */
 
-/* Data */
+let storageList = {};
+
+/* Glob pattern matching */
 function glob(pattern, input) {
-  var re = new RegExp(
+  const re = new RegExp(
     decodeURIComponent(
-      pattern.replace(/([.?+^$[\]\\(){}|\/-])/g, "\\$1").replace(/\*/g, ".*")
+      pattern.replace(/([.?+^$[\]\\(){}|/-])/g, "\\$1").replace(/\*/g, ".*")
     )
   );
   return re.test(input);
 }
 
-chrome.storage.sync.get(null, function(items) {
+/* Load storage on startup */
+chrome.storage.sync.get(null, (items) => {
   storageList = items;
-  console.log(storageList);
+  console.log("[Js-Injection] Storage loaded:", Object.keys(storageList).length, "items");
 });
 
-/* Listener */
-chrome.storage.onChanged.addListener(function() {
-  window.location.reload();
+/* FIX: Watch for storage changes and update cache */
+chrome.storage.onChanged.addListener((_changes, area) => {
+  if (area === "sync") {
+    chrome.storage.sync.get(null, (items) => {
+      storageList = items;
+    });
+  }
 });
 
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-  // console.log("메시지", message); // state, action
-  // console.log("센더", sender);
-  // console.log("대답", sendResponse); // callback
-  let query = false;
+/* Inject scripts into matching tabs when requested via message */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.state === "beforeLoad") {
-    for (let key in storageList) {
-      if (key !== "version") {
-        if (glob(storageList[key].url, sender.url)) {
-          chrome.tabs.executeScript(sender.tab.id, {
-            code: storageList[key].code,
-            runAt: "document_idle"
-          });
-          if (storageList[key].jquery) {
-            query = true;
-          }
-        }
+    let injectJquery = false;
+    const injections = [];
+
+    for (const key in storageList) {
+      if (key === "version") continue;
+      const item = storageList[key];
+      if (!item?.url || !sender.url) continue;
+
+      if (glob(item.url, sender.url)) {
+        // FIX #6: new Function() → func + args 패턴으로 CSP 안전하게 실행
+        // user code는 args[0]으로 전달되어 MAIN world에서 eval됨
+        injections.push(
+          chrome.scripting.executeScript({
+            target: { tabId: sender.tab.id, allFrames: true },
+            world: "MAIN",
+            func: (code) => {
+              // eslint-disable-next-line no-eval
+              eval(code);
+            },
+            args: [item.code],
+          })
+        );
+        if (item.jquery) injectJquery = true;
       }
     }
-    sendResponse(query);
+
+    Promise.allSettled(injections).then(() => {
+      sendResponse(injectJquery);
+    });
+
+    return true; // keep message channel open
   }
 });

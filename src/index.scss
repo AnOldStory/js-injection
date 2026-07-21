@@ -1,4 +1,4 @@
-@import "_variables.scss";
+@use "variables" as *;
 
 /* SCROLL */
 
@@ -6,19 +6,13 @@
   width: 5px;
 }
 
-/* 스크롤바의 width */
-
 ::-webkit-scrollbar-track {
   background-color: #f0f0f0;
 }
 
-/* 스크롤바의 전체 배경색 */
-
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, #a1a1a1, #a1a1a1);
 }
-
-/* 스크롤바 색 */
 
 ::-webkit-scrollbar-button {
   display: none;
@@ -51,37 +45,33 @@ a:visited {
 }
 
 .top:hover {
-  background-color: $top-hover-color;
+  cursor: pointer;
 }
 
 .arrange {
   display: flex;
   justify-content: space-between;
-}
-
-.delete {
-  padding: 5px;
-  white-space: nowrap;
-}
-
-.delete:hover {
-  color: $hover-color;
-  background: $delete-hover;
-}
-
-.delete-inner {
-  padding: 5px;
-}
-
-.btn {
-  cursor: pointer;
-  user-select: none;
-  text-decoration: none;
-
-  transition: all 0.2s;
+  align-items: center;
 }
 
 .btn-margin {
-  margin: 3px;
-  border: 1px solid $btn-color;
+  margin: 2px;
+}
+
+.delete {
+  display: flex;
+  align-items: center;
+}
+
+.delete:hover {
+  background-color: $delete-hover;
+}
+
+.delete-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 5px 8px;
+  color: black;
 }
