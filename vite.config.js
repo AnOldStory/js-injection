@@ -18,7 +18,7 @@ export default defineConfig({
         const distDir = path.resolve(__dirname, "dist");
         if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
 
-        const files = ["background.js", "injection.js", "icon128.png", "manifest.json"];
+        const files = ["background.js", "injection.js", "icon128.png", "manifest.json", "offscreen.html", "offscreen.js"];
         files.forEach((file) => {
           const src = path.resolve(__dirname, "public", file);
           const dest = path.resolve(distDir, file);

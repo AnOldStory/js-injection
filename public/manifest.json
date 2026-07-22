@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Js-Injection",
   "author": "AnOldStory",
-  "version": "3.2.0",
-  "description": "Javascript Injection Extension Tool for Chromium-based Web browsers",
+  "version": "3.3.0",
+  "description": "Javascript Injection & MCP Bridge Tool for Chromium-based Web browsers",
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -27,6 +27,6 @@
     "128": "icon128.png"
   },
   "options_page": "index.html",
-  "permissions": ["storage", "scripting"],
-  "host_permissions": ["<all_urls>"]
+  "permissions": ["storage", "scripting", "offscreen", "tabs"],
+  "host_permissions": ["<all_urls>", "ws://localhost/*", "http://localhost/*"]
 }

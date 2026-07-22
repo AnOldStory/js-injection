@@ -1,6 +1,16 @@
-/* Manifest V3 Service Worker */
+/* Manifest V3 Service Worker with MCP Bridge Support */
 
 let storageList = {};
+
+/* Helper: Create offscreen document if not existing */
+async function ensureOffscreenDocument() {
+  if (await chrome.offscreen.hasDocument()) return;
+  await chrome.offscreen.createDocument({
+    url: "offscreen.html",
+    reasons: ["MATCH_PATTERNS"],
+    justification: "Maintain persistent WebSocket connection to MCP server",
+  });
+}
 
 /* Glob pattern matching */
 function glob(pattern, input) {
@@ -75,21 +85,92 @@ const UNLOCK_CODE = `
 chrome.storage.sync.get(null, (items) => {
   storageList = items || {};
   console.log("[Js-Injection] Storage loaded:", Object.keys(storageList).length, "items");
-});
 
-/* Watch for storage changes and update cache */
-chrome.storage.onChanged.addListener((_changes, area) => {
-  if (area === "sync") {
-    chrome.storage.sync.get(null, (items) => {
-      storageList = items || {};
+  // Auto-connect MCP if enabled
+  if (storageList.__mcpEnabled) {
+    ensureOffscreenDocument().then(() => {
+      chrome.runtime.sendMessage({
+        type: "CONNECT_MCP",
+        url: storageList.__mcpUrl || "ws://localhost:3000/mcp",
+      });
     });
   }
 });
 
-/* Inject scripts into matching tabs when requested via message */
+/* Watch for storage changes */
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync") {
+    chrome.storage.sync.get(null, (items) => {
+      storageList = items || {};
+    });
+
+    if (changes.__mcpEnabled) {
+      if (changes.__mcpEnabled.newValue) {
+        ensureOffscreenDocument().then(() => {
+          chrome.runtime.sendMessage({
+            type: "CONNECT_MCP",
+            url: storageList.__mcpUrl || "ws://localhost:3000/mcp",
+          });
+        });
+      }
+    }
+  }
+});
+
+/* Handle MCP Tool Commands from AI Server */
+async function handleMcpCommand(payload) {
+  const { action, params } = payload || {};
+
+  if (action === "listRules") {
+    return storageList;
+  }
+  if (action === "addRule") {
+    const newId = Date.now().toString();
+    const ruleData = {
+      nickname: params.nickname || "AI Created Rule",
+      url: params.url || "https://*/*",
+      code: params.code || "",
+      cssCode: params.cssCode || "",
+      enabled: true,
+      jquery: params.jquery || "none",
+      unlockRightClick: !!params.unlockRightClick,
+      runAt: params.runAt || "document_start",
+      tags: params.tags || "AI",
+    };
+    await chrome.storage.sync.set({ [newId]: ruleData });
+    return { success: true, id: newId, rule: ruleData };
+  }
+  if (action === "deleteRule") {
+    await chrome.storage.sync.remove(String(params.id));
+    return { success: true, deletedId: params.id };
+  }
+  if (action === "injectScriptOnActiveTab") {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tabs?.[0]?.id) return { error: "No active tab found" };
+    
+    await chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id, allFrames: true },
+      world: "MAIN",
+      func: (userCode) => {
+        // eslint-disable-next-line no-eval
+        return eval(userCode);
+      },
+      args: [params.code],
+    });
+    return { success: true, tabId: tabs[0].id };
+  }
+
+  return { error: `Unknown MCP action: ${action}` };
+}
+
+/* Listen for messages from content scripts, UI, and Offscreen document */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "MCP_COMMAND_RECEIVED") {
+    handleMcpCommand(message.payload).then((res) => sendResponse(res));
+    return true;
+  }
+
   if (message.state === "beforeLoad") {
-    // Check Master Switch
     if (storageList.__globalEnabled === false) {
       sendResponse([]);
       return true;
@@ -110,7 +191,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const item = storageList[key];
       if (!item?.url) continue;
 
-      // Skip disabled individual rule
       if (item.enabled === false) continue;
 
       if (glob(item.url, sender.url)) {
@@ -119,7 +199,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           librariesToInject.push(libUrl);
         }
 
-        // Auto Unlock Right Click if enabled for rule
         if (item.unlockRightClick) {
           injections.push(
             chrome.scripting.executeScript({
@@ -134,7 +213,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           );
         }
 
-        // CSS Injection if present
         if (item.cssCode) {
           chrome.scripting.insertCSS({
             target: { tabId: sender.tab.id, allFrames: true },
@@ -142,7 +220,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }).catch(() => {});
         }
 
-        // JS Code Injection
         if (item.code) {
           injections.push(
             chrome.scripting.executeScript({
@@ -163,6 +240,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse(librariesToInject);
     });
 
-    return true; // keep message channel open
+    return true;
   }
 });

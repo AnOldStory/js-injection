@@ -104,7 +104,7 @@ function AppRouter() {
     <HashRouter basename="/">
       <div className="top arrange">
         <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
-          <div className="title">{t("appTitle")} <span style={{ fontSize: "11px", opacity: 0.7 }}>v3.2.0</span></div>
+          <div className="title">{t("appTitle")} <span style={{ fontSize: "11px", opacity: 0.7 }}>v3.3.0</span></div>
         </Link>
         <div className="small arrange" style={{ gap: "8px" }}>
           <div className="setting" onClick={handleToggleLang} style={{ cursor: "pointer" }} title="Language / 언어 변경">

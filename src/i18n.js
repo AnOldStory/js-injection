@@ -73,7 +73,14 @@ export const i18n = {
     backupDesc: "규칙을 파일로 내보내거나 가져오고, 전체 데이터를 초기화할 수 있습니다.",
     noSearchResults: "검색 결과가 없습니다.",
     noRulesRegistered: "등록된 규칙이 없습니다.",
-    quickUnlockTooltip: "현재 탭의 우클릭/복사 차단을 즉시 해제합니다."
+    quickUnlockTooltip: "현재 탭의 우클릭/복사 차단을 즉시 해제합니다.",
+    mcpTitle: "AI Model Context Protocol (MCP) 연동 브릿지",
+    mcpDesc: "Claude Desktop, Antigravity, Cursor 등 외부 AI 에이전트와 WebSocket으로 연결하여 브라우저 제어 및 스크립트 자동 추가 지원",
+    mcpConnectBtn: "MCP 브릿지 연결",
+    mcpDisconnectBtn: "MCP 브릿지 해제",
+    mcpServerUrl: "MCP WebSocket 주소",
+    mcpStatusConnected: "🟢 MCP 브릿지 연결됨 (AI 제어 대기 중)",
+    mcpStatusDisconnected: "⚪ MCP 브릿지 연결 끊김"
   },
   en: {
     appTitle: "JS-Injection",
@@ -149,6 +156,13 @@ export const i18n = {
     backupDesc: "Export/import rules to JSON files, or reset all extension data.",
     noSearchResults: "No matching rules found.",
     noRulesRegistered: "No rules registered.",
-    quickUnlockTooltip: "Bypasses right-click and copy restrictions on the current tab immediately."
+    quickUnlockTooltip: "Bypasses right-click and copy restrictions on the current tab immediately.",
+    mcpTitle: "AI Model Context Protocol (MCP) Bridge",
+    mcpDesc: "Connects via WebSocket to Claude Desktop, Antigravity, or Cursor AI agents for browser automation and auto script creation.",
+    mcpConnectBtn: "Connect MCP Bridge",
+    mcpDisconnectBtn: "Disconnect MCP",
+    mcpServerUrl: "MCP WebSocket URL",
+    mcpStatusConnected: "🟢 MCP Bridge Connected (Waiting for AI commands)",
+    mcpStatusDisconnected: "⚪ MCP Bridge Disconnected"
   }
 };

@@ -20,6 +20,8 @@ import {
   faList,
   faCode,
   faUnlock,
+  faRobot,
+  faPlug,
 } from "@fortawesome/free-solid-svg-icons";
 import UrlLink from "component/UrlLink";
 
@@ -48,10 +50,20 @@ function MainContainer() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTabUrl, setCurrentTabUrl] = useState("");
 
+  // MCP State
+  const [mcpEnabled, setMcpEnabled] = useState(false);
+  const [mcpUrl, setMcpUrl] = useState("ws://localhost:3000/mcp");
+  const [mcpConnected, setMcpConnected] = useState(false);
+
   // Determine if running in Options Page vs Popup/Sidebar
   const isOptionsPage = !window.location.href.includes("popup") && window.innerWidth > 650;
 
   useEffect(() => {
+    chrome.storage.sync.get(["__mcpEnabled", "__mcpUrl"], (items) => {
+      setMcpEnabled(!!items.__mcpEnabled);
+      if (items.__mcpUrl) setMcpUrl(items.__mcpUrl);
+    });
+
     if (chrome.tabs?.query) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs?.[0]?.url) {
@@ -59,7 +71,26 @@ function MainContainer() {
         }
       });
     }
+
+    const messageListener = (msg) => {
+      if (msg.type === "MCP_STATUS_CHANGE") {
+        setMcpConnected(msg.connected);
+      }
+    };
+    chrome.runtime.onMessage.addListener(messageListener);
+    return () => chrome.runtime.onMessage.removeListener(messageListener);
   }, []);
+
+  const handleToggleMcp = () => {
+    const nextState = !mcpEnabled;
+    setMcpEnabled(nextState);
+    chrome.storage.sync.set({ __mcpEnabled: nextState, __mcpUrl: mcpUrl }, () => {
+      chrome.runtime.sendMessage({
+        type: nextState ? "CONNECT_MCP" : "DISCONNECT_MCP",
+        url: mcpUrl,
+      });
+    });
+  };
 
   const handleToggleGlobal = () => {
     const nextState = !globalEnabled;
@@ -288,8 +319,46 @@ function MainContainer() {
             {mainListUI}
           </div>
 
-          {/* Right Panel: Settings, Statistics & Backup Management */}
+          {/* Right Panel: Settings, Statistics, MCP & Backup Management */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* MCP AI Protocol Bridge Card */}
+            <div className="options-card" style={{ background: "#f0fdf4", borderColor: "#86efac" }}>
+              <div className="options-card-header" style={{ color: "#166534", borderBottomColor: "#bbf7d0" }}>
+                <FontAwesomeIcon icon={faRobot} /> {t("mcpTitle")}
+              </div>
+              <div style={{ fontSize: "12px", color: "#15803d", marginBottom: "10px", lineHeight: "1.4" }}>
+                {t("mcpDesc")}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={mcpUrl}
+                  onChange={(e) => setMcpUrl(e.target.value)}
+                  placeholder={t("mcpServerUrl")}
+                  style={{ padding: "6px 8px", borderRadius: "4px", border: "1px solid #a7f3d0", fontSize: "12px" }}
+                />
+                <button
+                  onClick={handleToggleMcp}
+                  style={{
+                    padding: "8px",
+                    background: mcpEnabled ? "#dc2626" : "#16a34a",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    fontWeight: "bold",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FontAwesomeIcon icon={faPlug} /> {mcpEnabled ? t("mcpDisconnectBtn") : t("mcpConnectBtn")}
+                </button>
+                <div style={{ fontSize: "11px", fontWeight: "bold", color: mcpConnected ? "#15803d" : "#6b7280", marginTop: "2px" }}>
+                  {mcpConnected ? t("mcpStatusConnected") : t("mcpStatusDisconnected")}
+                </div>
+              </div>
+            </div>
+
             {/* System Status Summary */}
             <div className="options-card">
               <div className="options-card-header">
@@ -299,7 +368,7 @@ function MainContainer() {
                 <div>• {t("totalRules")} <strong>{totalRulesCount}</strong></div>
                 <div>• {t("activeRules")} <strong style={{ color: "#2e7d32" }}>{activeRulesCount}</strong></div>
                 <div>• {t("injectionStatus")} <strong style={{ color: globalEnabled ? "#2e7d32" : "#c62828" }}>{globalEnabled ? t("statusNormal") : t("statusPaused")}</strong></div>
-                <div>• {t("appVersion")} <strong>v3.2.0</strong></div>
+                <div>• {t("appVersion")} <strong>v3.3.0</strong></div>
               </div>
             </div>
 
@@ -309,6 +378,7 @@ function MainContainer() {
                 <FontAwesomeIcon icon={faCode} /> {t("quickTipsTitle")}
               </div>
               <div style={{ fontSize: "12px", color: "#666", lineHeight: "1.6" }}>
+                <p style={{ margin: "0 0 6px 0" }}>🤖 <strong>MCP Protocol:</strong> 외부 AI 에이전트가 브라우저 주입 스크립트를 제어하도록 연결합니다.</p>
                 <p style={{ margin: "0 0 6px 0" }}>🔓 {t("tipUnlock")}</p>
                 <p style={{ margin: "0 0 6px 0" }}>💡 {t("tipLiveCss")}</p>
                 <p style={{ margin: 0 }}>💡 {t("tipRunNow")}</p>
