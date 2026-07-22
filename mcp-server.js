@@ -4,8 +4,8 @@
  * Exposes Tool Definitions to Claude Desktop / Antigravity / Cursor via Stdio
  */
 
-const { WebSocketServer } = require('ws');
-const readline = require('readline');
+import { WebSocketServer } from 'ws';
+import readline from 'readline';
 
 const PORT = 3000;
 const wss = new WebSocketServer({ port: PORT, path: '/mcp' });
