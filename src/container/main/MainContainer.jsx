@@ -99,8 +99,8 @@ function MainContainer() {
     {
       mcpServers: {
         "js-injection": {
-          command: "node",
-          args: ["/home/ubuntu/Js-Injection/mcp-server.js"],
+          command: "npx",
+          args: ["-y", "js-injection-mcp"],
         },
       },
     },

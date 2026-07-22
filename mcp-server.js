@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Official Model Context Protocol (MCP) Server for Js-Injection Extension
  * Exposes Tool Definitions to Claude Desktop / Antigravity / Cursor via Stdio
