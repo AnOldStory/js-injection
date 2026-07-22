@@ -1,16 +1,31 @@
 {
-  "name": "js-injection",
+  "name": "js-injection-mcp",
   "version": "3.3.0",
-  "private": true,
+  "description": "Official Model Context Protocol (MCP) Server and Chrome/Whale Extension for JS-Injection",
   "type": "module",
+  "main": "./mcp-server.js",
+  "bin": {
+    "js-injection-mcp": "./mcp-server.js"
+  },
+  "files": [
+    "mcp-server.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "chrome-extension",
+    "javascript-injection",
+    "ai-automation"
+  ],
+  "author": "AnOldStory",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src"
-  },
-  "bin": {
-    "js-injection-mcp": "./mcp-server.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -22,7 +37,8 @@
     "react-ace": "^13.0.0",
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^6.30.1"
+    "react-router-dom": "^6.30.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
