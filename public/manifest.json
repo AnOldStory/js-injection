@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Js-Injection",
+  "name": "__MSG_extensionName__",
   "author": "AnOldStory",
   "version": "3.3.0",
-  "description": "Javascript Injection & MCP Bridge Tool for Chromium-based Web browsers",
+  "default_locale": "ko",
+  "description": "__MSG_extensionDescription__",
   "background": {
     "service_worker": "background.js",
     "type": "module"

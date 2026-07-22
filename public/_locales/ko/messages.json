@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Js-Injection (자바스크립트 & CSS 주입 / AI MCP 연동)",
+    "description": "확장 프로그램 이름"
+  },
+  "extensionDescription": {
+    "message": "웹사이트에 자바스크립트 및 CSS 코드를 자동으로 주입하고, 우클릭 해제 및 AI MCP(Model Context Protocol) 연동을 지원하는 확장 도구",
+    "description": "확장 프로그램 설명"
+  }
+}

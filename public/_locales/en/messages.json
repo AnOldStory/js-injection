@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Js-Injection",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Javascript Injection & MCP Bridge Tool for Chromium-based Web browsers",
+    "description": "The description of the extension"
+  }
+}

@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
-import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +29,27 @@ export default defineConfig({
             console.warn(`[copy-extension-files] Source not found: ${file}`);
           }
         });
+
+        // Copy _locales directory recursively
+        const copyDir = (srcDir, destDir) => {
+          if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+          const entries = readdirSync(srcDir, { withFileTypes: true });
+          for (const entry of entries) {
+            const srcPath = path.resolve(srcDir, entry.name);
+            const destPath = path.resolve(destDir, entry.name);
+            if (entry.isDirectory()) {
+              copyDir(srcPath, destPath);
+            } else {
+              copyFileSync(srcPath, destPath);
+            }
+          }
+        };
+
+        const localesSrc = path.resolve(__dirname, "public", "_locales");
+        if (existsSync(localesSrc)) {
+          copyDir(localesSrc, path.resolve(distDir, "_locales"));
+          console.log("[copy-extension-files] Copied _locales directory");
+        }
       },
     },
   ],
