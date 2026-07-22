@@ -80,7 +80,10 @@ export const i18n = {
     mcpDisconnectBtn: "MCP 브릿지 해제",
     mcpServerUrl: "MCP WebSocket 주소",
     mcpStatusConnected: "🟢 MCP 브릿지 연결됨 (AI 제어 대기 중)",
-    mcpStatusDisconnected: "⚪ MCP 브릿지 연결 끊김"
+    mcpStatusDisconnected: "⚪ MCP 브릿지 연결 끊김",
+    mcpGuideTitle: "📋 Claude Desktop / Antigravity MCP 설정 안내",
+    mcpGuideStep1: "1. mcp-server.js 스크립트 경로:",
+    mcpGuideStep2: "2. Claude Desktop / IDE MCP 설정 파일(mcp.json)에 아래 내용 추가:"
   },
   en: {
     appTitle: "JS-Injection",
@@ -163,6 +166,9 @@ export const i18n = {
     mcpDisconnectBtn: "Disconnect MCP",
     mcpServerUrl: "MCP WebSocket URL",
     mcpStatusConnected: "🟢 MCP Bridge Connected (Waiting for AI commands)",
-    mcpStatusDisconnected: "⚪ MCP Bridge Disconnected"
+    mcpStatusDisconnected: "⚪ MCP Bridge Disconnected",
+    mcpGuideTitle: "📋 Claude Desktop / Antigravity Setup Guide",
+    mcpGuideStep1: "1. Path to mcp-server.js:",
+    mcpGuideStep2: "2. Add this snippet to your Claude Desktop / IDE MCP config (mcp.json):"
   }
 };

@@ -22,6 +22,8 @@ import {
   faUnlock,
   faRobot,
   faPlug,
+  faCopy,
+  faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import UrlLink from "component/UrlLink";
 
@@ -54,6 +56,7 @@ function MainContainer() {
   const [mcpEnabled, setMcpEnabled] = useState(false);
   const [mcpUrl, setMcpUrl] = useState("ws://localhost:3000/mcp");
   const [mcpConnected, setMcpConnected] = useState(false);
+  const [showMcpGuide, setShowMcpGuide] = useState(false);
 
   // Determine if running in Options Page vs Popup/Sidebar
   const isOptionsPage = !window.location.href.includes("popup") && window.innerWidth > 650;
@@ -89,6 +92,25 @@ function MainContainer() {
         type: nextState ? "CONNECT_MCP" : "DISCONNECT_MCP",
         url: mcpUrl,
       });
+    });
+  };
+
+  const mcpConfigSnippet = JSON.stringify(
+    {
+      mcpServers: {
+        "js-injection": {
+          command: "node",
+          args: ["/home/ubuntu/Js-Injection/mcp-server.js"],
+        },
+      },
+    },
+    null,
+    2
+  );
+
+  const handleCopyMcpConfig = () => {
+    navigator.clipboard.writeText(mcpConfigSnippet).then(() => {
+      alert("Claude Desktop MCP 설정 JSON이 클립보드에 복사되었습니다!");
     });
   };
 
@@ -323,9 +345,28 @@ function MainContainer() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {/* MCP AI Protocol Bridge Card */}
             <div className="options-card" style={{ background: "#f0fdf4", borderColor: "#86efac" }}>
-              <div className="options-card-header" style={{ color: "#166534", borderBottomColor: "#bbf7d0" }}>
-                <FontAwesomeIcon icon={faRobot} /> {t("mcpTitle")}
+              <div className="options-card-header" style={{ color: "#166534", borderBottomColor: "#bbf7d0", justifyContent: "space-between" }}>
+                <div>
+                  <FontAwesomeIcon icon={faRobot} /> {t("mcpTitle")}
+                </div>
+                <button
+                  onClick={() => setShowMcpGuide(!showMcpGuide)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#15803d",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <FontAwesomeIcon icon={faInfoCircle} /> {showMcpGuide ? "가이드 닫기" : "설정 가이드"}
+                </button>
               </div>
+
               <div style={{ fontSize: "12px", color: "#15803d", marginBottom: "10px", lineHeight: "1.4" }}>
                 {t("mcpDesc")}
               </div>
@@ -357,6 +398,38 @@ function MainContainer() {
                   {mcpConnected ? t("mcpStatusConnected") : t("mcpStatusDisconnected")}
                 </div>
               </div>
+
+              {/* Interactive MCP Guide Accordion */}
+              {showMcpGuide && (
+                <div style={{ marginTop: "12px", padding: "10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "12px", color: "#333" }}>
+                  <div style={{ fontWeight: "bold", color: "#166534", marginBottom: "6px" }}>{t("mcpGuideTitle")}</div>
+                  <div style={{ marginBottom: "4px", color: "#555" }}>{t("mcpGuideStep1")}</div>
+                  <code style={{ display: "block", background: "#f3f4f6", padding: "4px 6px", borderRadius: "4px", fontSize: "11px", wordBreak: "break-all", marginBottom: "8px" }}>
+                    /home/ubuntu/Js-Injection/mcp-server.js
+                  </code>
+
+                  <div style={{ marginBottom: "4px", color: "#555" }}>{t("mcpGuideStep2")}</div>
+                  <pre style={{ background: "#1e293b", color: "#f8fafc", padding: "8px", borderRadius: "4px", fontSize: "10px", overflowX: "auto", margin: "0 0 8px 0" }}>
+                    {mcpConfigSnippet}
+                  </pre>
+                  <button
+                    onClick={handleCopyMcpConfig}
+                    style={{
+                      width: "100%",
+                      padding: "6px",
+                      background: "#0284c7",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      fontSize: "11px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faCopy} /> MCP 설정 JSON 복사하기
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* System Status Summary */}
