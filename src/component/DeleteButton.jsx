@@ -4,18 +4,21 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus } from "@fortawesome/free-solid-svg-icons";
 
 function DeleteButton({ id }) {
-  const { loadStorage } = useStorage(); // FIX #9: 커스텀 훅
+  const { loadStorage, t } = useStorage();
 
-  const handleDelete = () => {
-    chrome.storage.sync.remove(String(id), () => {
-      loadStorage();
-    });
+  const handleDelete = (e) => {
+    e.preventDefault();
+    if (window.confirm(t("confirmDelete"))) {
+      chrome.storage.sync.remove(String(id), () => {
+        loadStorage();
+      });
+    }
   };
 
   return (
     <div className="big delete">
-      <Link to="/" className="btn delete-inner" onClick={handleDelete}>
-        <FontAwesomeIcon icon={faMinus} size="lg" /> 삭제하기
+      <Link to="/" className="btn delete-inner" onClick={handleDelete} title={t("delete")}>
+        <FontAwesomeIcon icon={faMinus} size="lg" /> {t("delete")}
       </Link>
     </div>
   );

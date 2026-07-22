@@ -1,11 +1,11 @@
 @use "../../variables" as *;
 
 .editor {
-  min-width: 500px;
-  width: calc(100% - 13.5px);
+  min-width: 450px;
+  width: 100%;
+  box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
-  margin: 3px;
 }
 
 .block-name {

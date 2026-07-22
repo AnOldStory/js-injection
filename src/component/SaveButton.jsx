@@ -4,34 +4,47 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 
 function SaveButton({ editorState, isNew }) {
-  const navigate = useNavigate();  // FIX #10: prop 대신 직접 사용
-  const { loadStorage } = useStorage(); // FIX #9: 커스텀 훅
+  const navigate = useNavigate();
+  const { loadStorage, t } = useStorage();
 
-  const save = (id, nickname, url, code, jquery) => {
+  const save = (id, stateData) => {
     chrome.storage.sync.set(
-      { [id]: { nickname, url, code, jquery } },
+      { [id]: stateData },
       () => { loadStorage(() => navigate("/")); }
     );
   };
 
   const handleSync = () => {
-    let { id, nickname, url, code, jquery } = editorState;
+    let { id, nickname, url, code, cssCode, jquery, customLibUrl, enabled, unlockRightClick, runAt, tags } = editorState;
     if (!url) url = "https://*.example.com/";
     if (!nickname) nickname = url;
 
+    const dataToSave = {
+      nickname,
+      url,
+      code,
+      cssCode: cssCode || "",
+      jquery: jquery || "none",
+      customLibUrl: customLibUrl || "",
+      enabled: enabled !== false,
+      unlockRightClick: !!unlockRightClick,
+      runAt: runAt || "document_start",
+      tags: tags || "",
+    };
+
     if (!isNew) {
       chrome.storage.sync.remove(String(id), () => {
-        save(id, nickname, url, code, jquery);
+        save(id, dataToSave);
       });
     } else {
-      save(id, nickname, url, code, jquery);
+      save(id, dataToSave);
     }
   };
 
   return (
     <div className="big-btn">
-      <div className="btn" onClick={handleSync}>
-        <FontAwesomeIcon icon={faSave} size="lg" /> 저장하기
+      <div className="btn" onClick={handleSync} style={{ cursor: "pointer" }}>
+        <FontAwesomeIcon icon={faSave} size="lg" /> {t("save")}
       </div>
     </div>
   );

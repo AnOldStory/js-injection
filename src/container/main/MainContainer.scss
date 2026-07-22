@@ -9,19 +9,21 @@
 
 .top {
   background: $top-color;
-  padding: 10px;
+  padding: 10px 16px;
 }
 
 .title {
   color: $title-color;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .setting {
   color: $setting-color;
   border: 1px solid $setting-border;
-  padding: 3px 10px 3px 10px;
+  padding: 4px 12px;
   border-radius: 6px;
+  font-size: 13px;
 }
 
 .setting:hover {
@@ -49,11 +51,10 @@
 }
 
 .big-btn {
-  min-width: 200px;
-  width: 30%;
+  min-width: 140px;
   margin: 10px auto 10px auto;
   text-align: center;
-  border-radius: 3px;
+  border-radius: 4px;
   background: linear-gradient(15deg, $big-btn-start, $big-btn-end);
   @include box-shadow;
 }
@@ -103,4 +104,41 @@
   color: red;
   font-weight: bold;
   text-align: center;
+}
+
+/* Options Page Dashboard Wide Layout */
+.options-dashboard {
+  max-width: 1280px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.options-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.options-card-header {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
 }
