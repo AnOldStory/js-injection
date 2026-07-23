@@ -101,3 +101,12 @@ npm run build
 ```
 
 Load the **`dist/`** folder into Chrome / Whale via `chrome://extensions` (Developer mode).
+
+---
+
+## 🔒 Privacy Policy
+
+Js-Injection strictly values user privacy and does **NOT** collect, track, or transmit any personal data to external servers.  
+For full details, please refer to the [PRIVACY_POLICY.md](PRIVACY_POLICY.md) document.
+
+
