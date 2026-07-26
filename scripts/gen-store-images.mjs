@@ -220,12 +220,14 @@ function windowMock(x, y, w, h, title, bodyInner) {
     inner += rrect(cx, cyy, cw, ch, 20, C.cardFill, C.cardBorder, 1);
     inner += rrect(cx + 26, cyy + 28, 58, 58, 16, "rgba(255,255,255,0.05)", "none");
     inner += icon(ic, cx + 41, cyy + 43, 28, col);
-    inner += `<text x="${cx + 26}" y="${cyy + 126}" font-family="${FONT}" font-size="22" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
+    // shrink long titles so they never overflow the card (usable width = cw - 52)
+    const tf = Math.min(22, Math.floor((cw - 52) / (t.length * 0.6)));
+    inner += `<text x="${cx + 26}" y="${cyy + 126}" font-family="${FONT}" font-size="${tf}" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
     // wrap description ~ 26 chars
     const words = d.split(" ");
     let line = "", ln = 0;
     for (const w of words) {
-      if ((line + " " + w).trim().length > 28) {
+      if ((line + " " + w).trim().length > 25) {
         inner += `<text x="${cx + 26}" y="${cyy + 162 + ln * 26}" font-family="${FONT}" font-size="16" fill="${C.muted}">${esc(line.trim())}</text>`;
         line = w; ln++;
       } else line += " " + w;
