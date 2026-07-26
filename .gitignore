@@ -22,3 +22,5 @@ npm-debug.log*
 # Local env
 .env.local
 .env.*.local
+# Packaged extension
+*.zip
