@@ -26,13 +26,26 @@ All preferences, user-defined scripts, custom CSS rules, and configuration setti
 
 ## 3. Use of Permissions
 
-The Extension requests specific browser permissions solely to provide its core features:
+The Extension requests only the permissions required to provide its core features. The list below matches exactly the permissions declared in the extension's `manifest.json`:
 
-- **`storage`**: Used to save your custom scripts, CSS rules, and user preferences locally within your browser.
-- **`scripting` & `activeTab` / Host Permissions**: Used to inject your custom JavaScript and CSS into the web pages you visit according to your defined rules.
-- **`declarativeNetRequest` / Web Request APIs** *(if applicable)*: Used strictly to support user-requested features such as bypassing right-click restrictions or enabling Live CSS reload.
+- **`storage`**: Saves your custom scripts, CSS rules, and user preferences locally within your browser.
+- **`scripting`**: Injects your custom JavaScript and CSS into the web pages you visit according to your defined rules.
+- **`tabs`**: Reads the URL of your currently active tab only, so the Extension can pre-fill the rule editor with the site you are on and apply the correct injection rules. It is never used to build a history of your browsing.
+- **`offscreen`**: Runs a minimal background document that maintains the optional local MCP WebSocket connection described in Section 3a. It handles no personal data.
+- **Host permission `<all_urls>`**: Required because you may configure the Extension to inject your own scripts and styles into any website of your choosing. The Extension does not read or transmit page content; it only applies the rules you define.
+- **Host permissions `ws://localhost/*` and `http://localhost/*`**: Used solely for the optional local AI (MCP) bridge described below. These are loopback addresses on your own machine and never reach the public internet.
 
 None of these permissions are used to monitor, harvest, or log your browsing history or personal activities.
+
+---
+
+## 3a. Optional Local AI (MCP) Bridge
+
+The Extension includes an optional **Model Context Protocol (MCP)** bridge that lets a local AI agent (e.g. Claude Desktop, Antigravity, or Cursor running on your own computer) manage your injection rules.
+
+- This feature connects **only to a WebSocket server running on your own machine** at `ws://localhost:3000` (loopback). No data leaves your device, and no remote or third-party server is contacted.
+- The connection carries only the injection rules and commands you or your local AI agent explicitly issue. It transmits no personal data, browsing history, or page content.
+- The bridge is inactive unless you run the accompanying local MCP server yourself. If you never start it, no connection is ever made.
 
 ---
 
