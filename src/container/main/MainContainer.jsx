@@ -110,7 +110,7 @@ function MainContainer() {
 
   const handleCopyMcpConfig = () => {
     navigator.clipboard.writeText(mcpConfigSnippet).then(() => {
-      alert("Claude Desktop MCP 설정 JSON이 클립보드에 복사되었습니다!");
+      alert(t("mcpCopySuccess"));
     });
   };
 
@@ -363,7 +363,7 @@ function MainContainer() {
                     gap: "4px",
                   }}
                 >
-                  <FontAwesomeIcon icon={faInfoCircle} /> {showMcpGuide ? "가이드 닫기" : "설정 가이드"}
+                  <FontAwesomeIcon icon={faInfoCircle} /> {showMcpGuide ? t("mcpGuideClose") : t("mcpGuideOpen")}
                 </button>
               </div>
 
@@ -426,7 +426,7 @@ function MainContainer() {
                       cursor: "pointer",
                     }}
                   >
-                    <FontAwesomeIcon icon={faCopy} /> MCP 설정 JSON 복사하기
+                    <FontAwesomeIcon icon={faCopy} /> {t("mcpCopyConfig")}
                   </button>
                 </div>
               )}
@@ -441,7 +441,7 @@ function MainContainer() {
                 <div>• {t("totalRules")} <strong>{totalRulesCount}</strong></div>
                 <div>• {t("activeRules")} <strong style={{ color: "#2e7d32" }}>{activeRulesCount}</strong></div>
                 <div>• {t("injectionStatus")} <strong style={{ color: globalEnabled ? "#2e7d32" : "#c62828" }}>{globalEnabled ? t("statusNormal") : t("statusPaused")}</strong></div>
-                <div>• {t("appVersion")} <strong>v3.3.0</strong></div>
+                <div>• {t("appVersion")} <strong>v{Config.version}</strong></div>
               </div>
             </div>
 
@@ -451,7 +451,7 @@ function MainContainer() {
                 <FontAwesomeIcon icon={faCode} /> {t("quickTipsTitle")}
               </div>
               <div style={{ fontSize: "12px", color: "#666", lineHeight: "1.6" }}>
-                <p style={{ margin: "0 0 6px 0" }}>🤖 <strong>MCP Protocol:</strong> 외부 AI 에이전트가 브라우저 주입 스크립트를 제어하도록 연결합니다.</p>
+                <p style={{ margin: "0 0 6px 0" }}>🤖 {t("tipMcp")}</p>
                 <p style={{ margin: "0 0 6px 0" }}>🔓 {t("tipUnlock")}</p>
                 <p style={{ margin: "0 0 6px 0" }}>💡 {t("tipLiveCss")}</p>
                 <p style={{ margin: 0 }}>💡 {t("tipRunNow")}</p>

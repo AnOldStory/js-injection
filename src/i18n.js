@@ -69,6 +69,7 @@ export const i18n = {
     tipUnlock: "우클릭 해제: 각 규칙 설정에서 '우클릭/드래그 금지 해제'를 켜거나 메인 상단 1회성 해제 버튼을 사용하세요.",
     tipLiveCss: "Live CSS Sync: 규칙 편집에서 Live CSS 체크 시, 새로고침 없이 즉시 반응합니다.",
     tipRunNow: "Run Now: 현재 탭에서 수동 실행 버튼(▶)으로 1회성 스크립트 실행이 가능합니다.",
+    tipMcp: "MCP Protocol: 외부 AI 에이전트가 브라우저 주입 스크립트를 제어하도록 연결합니다.",
     backupSectionTitle: "백업 및 관리",
     backupDesc: "규칙을 파일로 내보내거나 가져오고, 전체 데이터를 초기화할 수 있습니다.",
     noSearchResults: "검색 결과가 없습니다.",
@@ -83,7 +84,11 @@ export const i18n = {
     mcpStatusDisconnected: "⚪ MCP 브릿지 연결 끊김",
     mcpGuideTitle: "📋 Claude Desktop / Antigravity 연동 가이드",
     mcpGuideStep1: "1. 일반 사용자 추천 (npx 또는 npx js-injection-mcp):",
-    mcpGuideStep2: "2. Claude Desktop 설정 파일(claude_desktop_config.json)에 아래 JSON 추가:"
+    mcpGuideStep2: "2. Claude Desktop 설정 파일(claude_desktop_config.json)에 아래 JSON 추가:",
+    mcpGuideOpen: "설정 가이드",
+    mcpGuideClose: "가이드 닫기",
+    mcpCopyConfig: "MCP 설정 JSON 복사하기",
+    mcpCopySuccess: "Claude Desktop MCP 설정 JSON이 클립보드에 복사되었습니다!"
   },
   en: {
     appTitle: "JS-Injection",
@@ -155,6 +160,7 @@ export const i18n = {
     tipUnlock: "Right-Click Unlock: Toggle 'Enable Right-Click' in rule settings or click the 1-Click Unlock button in popup header.",
     tipLiveCss: "Live CSS Sync: When checked, CSS changes are applied live in real-time without refreshing.",
     tipRunNow: "Run Now: Click ▶ to manually execute the script once on the active tab.",
+    tipMcp: "MCP Protocol: Lets an external AI agent drive the scripts injected into your browser.",
     backupSectionTitle: "Backup & Data Management",
     backupDesc: "Export/import rules to JSON files, or reset all extension data.",
     noSearchResults: "No matching rules found.",
@@ -169,6 +175,10 @@ export const i18n = {
     mcpStatusDisconnected: "⚪ MCP Bridge Disconnected",
     mcpGuideTitle: "📋 Claude Desktop / Antigravity Setup Guide",
     mcpGuideStep1: "1. For General Users (npx auto run):",
-    mcpGuideStep2: "2. Add this JSON snippet to your Claude Desktop / IDE config (mcp.json):"
+    mcpGuideStep2: "2. Add this JSON snippet to your Claude Desktop / IDE config (mcp.json):",
+    mcpGuideOpen: "Setup guide",
+    mcpGuideClose: "Close guide",
+    mcpCopyConfig: "Copy MCP config JSON",
+    mcpCopySuccess: "Claude Desktop MCP config JSON copied to clipboard!"
   }
 };

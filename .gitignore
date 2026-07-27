@@ -24,3 +24,6 @@ npm-debug.log*
 .env.*.local
 # Packaged extension
 *.zip
+
+# Temp Chrome profile used by scripts/capture-app-shots.mjs
+.tmp-chrome-profile/

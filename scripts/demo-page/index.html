@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Devlog — Shipping a Manifest V3 extension</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: #ffffff;
+        color: #1f2933;
+        line-height: 1.6;
+      }
+      header.site {
+        border-bottom: 1px solid #e4e7eb;
+        background: #fff;
+        position: sticky;
+        top: 0;
+      }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+      header.site .wrap { display: flex; align-items: center; gap: 28px; height: 62px; }
+      .brand { font-weight: 800; font-size: 19px; letter-spacing: -0.3px; }
+      .brand span { color: #2f6fb5; }
+      nav.site { display: flex; gap: 22px; font-size: 14px; color: #52606d; }
+      nav.site a { color: inherit; text-decoration: none; }
+      nav.site a.on { color: #2f6fb5; font-weight: 700; }
+      .searchbox {
+        margin-left: auto; border: 1px solid #e4e7eb; border-radius: 8px;
+        padding: 7px 12px; font-size: 13px; color: #9aa5b1; min-width: 190px;
+      }
+      .layout { display: grid; grid-template-columns: 1fr 268px; gap: 44px; padding: 38px 0 60px; }
+      .kicker { color: #2f6fb5; font-size: 13px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+      h1 { font-size: 38px; line-height: 1.2; margin: 10px 0 14px; letter-spacing: -0.8px; }
+      .byline { display: flex; align-items: center; gap: 10px; color: #7b8794; font-size: 13px; margin-bottom: 26px; }
+      .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #6fa8dc, #2f6fb5); }
+      h2 { font-size: 22px; margin: 34px 0 10px; letter-spacing: -0.3px; }
+      p { margin: 0 0 14px; font-size: 15.5px; color: #3e4c59; }
+      pre {
+        background: #f5f7fa; border: 1px solid #e4e7eb; border-radius: 10px;
+        padding: 16px 18px; font-size: 13px; overflow-x: auto; color: #334e68;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 18px; }
+      th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #e4e7eb; }
+      th { color: #52606d; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.6px; }
+      aside .card {
+        border: 1px solid #e4e7eb; border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; background: #fff;
+      }
+      aside h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.9px; color: #7b8794; margin: 0 0 10px; }
+      aside ul { margin: 0; padding-left: 18px; font-size: 14px; color: #3e4c59; }
+      aside li { margin-bottom: 6px; }
+      .tag { display: inline-block; font-size: 12px; background: #edf2f7; color: #52606d; border-radius: 20px; padding: 3px 10px; margin: 0 6px 6px 0; }
+      footer.site { border-top: 1px solid #e4e7eb; color: #9aa5b1; font-size: 13px; padding: 22px 0 34px; }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <div class="brand">dev<span>log</span></div>
+        <nav class="site">
+          <a href="#" class="on">Articles</a>
+          <a href="#">Guides</a>
+          <a href="#">Changelog</a>
+          <a href="#">About</a>
+        </nav>
+        <div class="searchbox">Search articles…</div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <div class="layout">
+        <article>
+          <div class="kicker">Browser Extensions</div>
+          <h1>Shipping a Manifest V3 extension without losing your mind</h1>
+          <div class="byline">
+            <div class="avatar"></div>
+            <div>Sam Rivera · 8 min read · Updated today</div>
+          </div>
+
+          <p>
+            Migrating from Manifest V2 changed how background code runs: the persistent background page is gone, and a
+            service worker takes its place. That single change ripples through storage access, message passing, and every
+            assumption you had about long-lived state.
+          </p>
+
+          <h2>Why the service worker keeps sleeping</h2>
+          <p>
+            A service worker is evicted after a short idle period, so anything cached in a module-level variable can
+            vanish between two user actions. The fix is not to fight the lifecycle — it is to treat
+            <code>chrome.storage</code> as the source of truth and rehydrate on every wake-up.
+          </p>
+          <pre>chrome.storage.sync.get(null, (items) =&gt; {
+  state = items || {};
+  console.log("rehydrated", Object.keys(state).length, "entries");
+});</pre>
+
+          <h2>Injecting code at the right moment</h2>
+          <p>
+            Content scripts declared at <code>document_start</code> run before the page paints, which is what you want for
+            style overrides. Anything that touches the DOM tree needs to wait, either for
+            <code>document_end</code> or for an explicit observer.
+          </p>
+
+          <h2>Permission budget</h2>
+          <p>Reviewers read your permission list closely. Keep it to what you can justify in one sentence each.</p>
+          <table>
+            <thead>
+              <tr><th>Permission</th><th>Used for</th><th>Optional</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>storage</td><td>Saving user rules</td><td>No</td></tr>
+              <tr><td>scripting</td><td>Running the user's own code</td><td>No</td></tr>
+              <tr><td>tabs</td><td>Reading the active tab URL</td><td>No</td></tr>
+              <tr><td>offscreen</td><td>Keeping a local socket alive</td><td>Yes</td></tr>
+            </tbody>
+          </table>
+
+          <h2>What to test before you submit</h2>
+          <p>
+            Load the unpacked build, open three surfaces at once — popup, side panel, options — and change a value in one.
+            If the other two do not update, your storage listener is wired incorrectly.
+          </p>
+        </article>
+
+        <aside>
+          <div class="card">
+            <h3>On this page</h3>
+            <ul>
+              <li>Why the service worker keeps sleeping</li>
+              <li>Injecting code at the right moment</li>
+              <li>Permission budget</li>
+              <li>What to test before you submit</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Topics</h3>
+            <div>
+              <span class="tag">manifest v3</span><span class="tag">chromium</span><span class="tag">service worker</span
+              ><span class="tag">devtools</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Newsletter</h3>
+            <p style="font-size: 13.5px; margin: 0">One short email every Friday. No tracking pixels.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <footer class="site">
+      <div class="wrap">© 2026 devlog — a demo page used for extension screenshots.</div>
+    </footer>
+  </body>
+</html>
