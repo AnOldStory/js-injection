@@ -304,4 +304,58 @@ function windowMock(x, y, w, h, title, bodyInner) {
   await render("screenshot-4-editor-1280x800.png", W, H, inner);
 }
 
+// ============ 7) SCREENSHOT 5 — REAL USAGE (injection running) ============
+{
+  const W = 1280, H = 800;
+  // real capture: extension popup + injected alert() firing on naver.com
+  const shotW = 1000, shotH = 625; // keeps the original 1.6 aspect ratio
+  const sx = (W - shotW) / 2, sy = 150;
+  const raw = await sharp(resolve(ROOT, "STOREIMG/제목 없음.png"))
+    .resize(shotW, shotH, { fit: "fill" })
+    .png()
+    .toBuffer();
+  let inner = "";
+  inner += `<text x="${W / 2}" y="72" font-family="${FONT}" font-size="40" font-weight="800" fill="${C.text}" text-anchor="middle">Your code, running on a real site</text>`;
+  inner += `<text x="${W / 2}" y="112" font-family="${FONT}" font-size="20" fill="${C.muted}" text-anchor="middle">Save a rule once — it fires automatically on every visit.</text>`;
+  inner += `<defs><clipPath id="shotClip"><rect x="${sx}" y="${sy}" width="${shotW}" height="${shotH}" rx="14"/></clipPath></defs>`;
+  inner += `<rect x="${sx - 6}" y="${sy - 6}" width="${shotW + 12}" height="${shotH + 12}" rx="20" fill="rgba(255,255,255,0.06)" stroke="${C.cardBorder}" stroke-width="1"/>`;
+  inner += `<image href="${await b64(raw)}" x="${sx}" y="${sy}" width="${shotW}" height="${shotH}" clip-path="url(#shotClip)"/>`;
+  inner += `<rect x="${sx}" y="${sy}" width="${shotW}" height="${shotH}" rx="14" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>`;
+  inner += `<text x="${W / 2}" y="${sy + shotH + 44}" font-family="${FONT}" font-size="17" fill="${C.blueDim}" text-anchor="middle">Actual capture — rule editor open, injected script executing on the page</text>`;
+  await render("screenshot-5-in-action-1280x800.png", W, H, inner);
+}
+
+// ============ 8) SCREENSHOT 6 — REAL POPUP (rule list) ============
+{
+  const W = 1280, H = 800;
+  const scale = 1.45;
+  const pw = Math.round(331 * scale), ph = Math.round(360 * scale);
+  const px = 720, py = 180;
+  const raw = await sharp(resolve(ROOT, "STOREIMG/제목 없음2.png"))
+    .resize(pw, ph, { fit: "fill" })
+    .png()
+    .toBuffer();
+  let inner = "";
+  inner += `<text x="90" y="140" font-family="${FONT}" font-size="42" font-weight="800" fill="${C.text}">Manage every rule</text>`;
+  inner += `<text x="90" y="184" font-family="${FONT}" font-size="21" fill="${C.muted}">from the toolbar popup</text>`;
+  const bullets = [
+    ["code", "Add rules per domain", "Unlimited rules, wildcards supported"],
+    ["toggle", "Delete or edit instantly", "Every rule listed at a glance"],
+    ["layers", "Backup & restore", "Export and import your whole setup"],
+  ];
+  bullets.forEach(([ic, t, d], i) => {
+    const by = 270 + i * 130;
+    inner += rrect(90, by, 54, 54, 15, "rgba(74,144,217,0.14)", "none");
+    inner += icon(ic, 105, by + 15, 26, C.blue);
+    inner += `<text x="166" y="${by + 26}" font-family="${FONT}" font-size="24" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
+    inner += `<text x="166" y="${by + 56}" font-family="${FONT}" font-size="17" fill="${C.muted}">${esc(d)}</text>`;
+  });
+  inner += `<defs><clipPath id="popClip"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="12"/></clipPath></defs>`;
+  inner += `<rect x="${px - 6}" y="${py - 6}" width="${pw + 12}" height="${ph + 12}" rx="18" fill="rgba(255,255,255,0.06)" stroke="${C.cardBorder}" stroke-width="1"/>`;
+  inner += `<image href="${await b64(raw)}" x="${px}" y="${py}" width="${pw}" height="${ph}" clip-path="url(#popClip)"/>`;
+  inner += `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="12" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>`;
+  inner += `<text x="${px + pw / 2}" y="${py + ph + 42}" font-family="${FONT}" font-size="17" fill="${C.blueDim}" text-anchor="middle">Actual toolbar popup</text>`;
+  await render("screenshot-6-popup-1280x800.png", W, H, inner);
+}
+
 console.log("\nAll store images written to STOREIMG/store/");
