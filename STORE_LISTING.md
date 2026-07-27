@@ -77,15 +77,12 @@ Every screenshot frames a real capture of the built extension running in Chromiu
 (the raw captures live in `STOREIMG/captures/`). Regenerate the whole set with
 `npm run store-images`.
 
-- Screenshots (1280×800), in upload order:
-  1. `screenshot-1-live-1280x800.png` — a rule firing on a live page
+- Screenshots (1280×800) — exactly five, matching the five store slots:
+  1. `screenshot-1-live-1280x800.png` — a rule firing on a live page, toolbar popup open over it
   2. `screenshot-2-before-after-1280x800.png` — same page, injections paused vs applied
-  3. `screenshot-3-dashboard-1280x800.png` — options dashboard
-  4. `screenshot-4-popup-1280x800.png` — toolbar popup
-  5. `screenshot-5-editor-1280x800.png` — rule editor
-  6. `screenshot-6-live-css-1280x800.png` — Live CSS Sync on the CSS tab
-  7. `screenshot-7-mcp-1280x800.png` — AI MCP bridge
-- Chrome Web Store accepts 5 screenshots — upload 1–5. Whale accepts the full set.
+  3. `screenshot-3-dashboard-1280x800.png` — options dashboard (rule list, MCP panel, backups)
+  4. `screenshot-4-editor-1280x800.png` — rule editor, with the Live CSS Sync control zoomed
+  5. `screenshot-5-mcp-1280x800.png` — AI MCP bridge
 - Small promo tile (440×280): `small-promo-440x280.png`
 - Marquee promo tile (1400×560): `marquee-1400x560.png`
 - Store icon (128×128): `public/icon128.png`

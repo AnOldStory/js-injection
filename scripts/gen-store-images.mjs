@@ -9,7 +9,11 @@
  * except the MCP architecture diagram, which pairs with a real capture of the
  * MCP panel.
  *
- * Output: 7 screenshots (1280x800), marquee promo (1400x560), small promo (440x280).
+ * Output: exactly 5 screenshots (1280x800) for store slots 1-5, plus the marquee
+ * promo (1400x560) and small promo (440x280) tiles. Five is the Chrome Web Store
+ * limit, so every headline feature has to earn its place inside those five:
+ *   1 live page + toolbar popup   2 before/after   3 dashboard
+ *   4 rule editor                 5 MCP bridge
  * English copy only (font-safe, no emoji). Brand blue #336699 sampled from the logo.
  */
 import sharp from "sharp";
@@ -164,6 +168,41 @@ async function render(name, w, h, inner) {
 // ---- real-capture framing -----------------------------------------------
 let uid = 0;
 
+// clamp a { left, top, width, height } crop (source pixels) to the image bounds
+function cropBox(crop, mw, mh) {
+  const left = Math.max(0, Math.min(crop.left ?? 0, mw - 1));
+  const top = Math.max(0, Math.min(crop.top ?? 0, mh - 1));
+  return {
+    left,
+    top,
+    width: Math.min(crop.width ?? mw, mw - left),
+    height: Math.min(crop.height ?? mh, mh - top),
+  };
+}
+
+/**
+ * A capture framed without window chrome — used for zoomed detail callouts
+ * that point at one control inside a larger screenshot.
+ */
+async function plainShot(x, y, w, file, { crop } = {}) {
+  let img = sharp(file);
+  let { width: mw, height: mh } = await img.metadata();
+  if (crop) {
+    const box = cropBox(crop, mw, mh);
+    img = img.extract(box);
+    mw = box.width;
+    mh = box.height;
+  }
+  const h = Math.round((w * mh) / mw);
+  const buf = await img.resize(w, h, { fit: "fill" }).png().toBuffer();
+  const id = `plain${uid++}`;
+  let s = rrect(x - 6, y - 6, w + 12, h + 12, 14, "rgba(255,255,255,0.055)", C.cardBorder, 1);
+  s += `<defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/></clipPath></defs>`;
+  s += `<image href="${b64(buf)}" x="${x}" y="${y}" width="${w}" height="${h}" clip-path="url(#${id})"/>`;
+  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+  return { svg: s, w, h };
+}
+
 /**
  * Frames one of the real captures inside a browser-window chrome.
  *   w         display width of the capture
@@ -177,10 +216,10 @@ async function windowShot(x, y, w, label, file, { crop, maxInner, kind = "url" }
   let img = sharp(file);
   let { width: mw, height: mh } = await img.metadata();
   if (crop) {
-    const top = Math.max(0, Math.min(crop.top, mh - 1));
-    const height = Math.min(crop.height, mh - top);
-    img = img.extract({ left: 0, top, width: mw, height });
-    mh = height;
+    const box = cropBox(crop, mw, mh);
+    img = img.extract(box);
+    mw = box.width;
+    mh = box.height;
   }
   let iw = w;
   let ih = Math.round((w * mh) / mw);
@@ -313,18 +352,26 @@ const SITE_URL = "demo.local:8899";
   await render("small-promo-440x280.png", W, H, inner);
 }
 
-// ---- 3) SCREENSHOT 1 — HERO: real page, rule firing ---------------------
+// ---- 3) SCREENSHOT 1 — HERO: real page + the popup that drives it -------
 {
   const W = 1280, H = 800;
+  const py = 172;
   let inner = "";
   inner += heading("Your JavaScript, running on a real page", "Save a rule once — the extension applies it on every visit, automatically.", {
     x: W / 2,
     y: 96,
     align: "middle",
   });
-  const shot = await windowShot(90, 172, 1100, `${SITE_URL}/`, SHOTS.live, { maxInner: 494 });
-  inner += shot.svg;
-  const stripY = 172 + shot.h + 34;
+  const page = await windowShot(90, py, 1100, `${SITE_URL}/`, SHOTS.live, { maxInner: 494 });
+  inner += page.svg;
+  // the toolbar popup sits over the page, the way Chrome actually renders it
+  const pw = 330;
+  const px = 90 + 1100 - pw - 26;
+  const ppy = py + 58;
+  inner += rrect(px + 7, ppy + 11, pw, Math.round(pw * 1.2) + 40, 16, "rgba(0,0,0,0.42)", "none");
+  const popup = await windowShot(px, ppy, pw, "Js-Injection", SHOTS.popup, { kind: "title", maxInner: Math.round(pw * 1.2) });
+  inner += popup.svg;
+  const stripY = py + page.h + 34;
   const row = pillRow(0, stripY, [
     ["bolt", "Live CSS Sync"],
     ["unlock", "Unlock right-click"],
@@ -386,34 +433,7 @@ const SITE_URL = "demo.local:8899";
   await render("screenshot-3-dashboard-1280x800.png", W, H, inner);
 }
 
-// ---- 6) SCREENSHOT 4 — TOOLBAR POPUP -----------------------------------
-{
-  const W = 1280, H = 800;
-  let inner = "";
-  inner += heading("Everything one click from the toolbar", "The popup carries the full rule list — no page reload, no options trip.", {
-    x: 84,
-    y: 132,
-  });
-  const shot = await windowShot(752, 194, 440, "Js-Injection", SHOTS.popup, { kind: "title", maxInner: 500 });
-  inner += shot.svg;
-  const bullets = [
-    ["toggle", "Master switch", "Pause every injection instantly"],
-    ["code", "Per-rule toggles", "Flip a single rule without deleting it"],
-    ["unlock", "1-click unlock", "Free right-click and copy on the open tab"],
-    ["layers", "Backup & restore", "Export the whole setup as JSON"],
-  ];
-  bullets.forEach(([ic, t, d], i) => {
-    const by = 244 + i * 118;
-    inner += rrect(84, by, 54, 54, 15, "rgba(74,144,217,0.14)", "none");
-    inner += icon(ic, 99, by + 15, 26, C.blue);
-    inner += `<text x="160" y="${by + 25}" font-family="${FONT}" font-size="23" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
-    inner += `<text x="160" y="${by + 52}" font-family="${FONT}" font-size="16" fill="${C.muted}">${esc(d)}</text>`;
-  });
-  inner += caption(752 + 220, 194 + shot.h + 34, "Actual toolbar popup");
-  await render("screenshot-4-popup-1280x800.png", W, H, inner);
-}
-
-// ---- 7) SCREENSHOT 5 — RULE EDITOR (JS) --------------------------------
+// ---- 6) SCREENSHOT 4 — RULE EDITOR + LIVE CSS SYNC --------------------
 {
   const W = 1280, H = 800;
   let inner = "";
@@ -422,51 +442,35 @@ const SITE_URL = "demo.local:8899";
     y: 96,
     align: "middle",
   });
-  const shot = await windowShot(90, 170, 780, "Js-Injection — Rule Editor", SHOTS.editor, { kind: "title", maxInner: 522 });
+  const shot = await windowShot(70, 170, 764, "Js-Injection — Rule Editor", SHOTS.editor, { kind: "title", maxInner: 512 });
   inner += shot.svg;
   const notes = [
     ["globe", "Wildcard domains", "https://*.example.com/*"],
     ["sync", "Run timing", "document_start / end / idle"],
-    ["layers", "CDN presets", "jQuery, Lodash, Axios, Day.js, Tailwind"],
-    ["unlock", "Right-click unlock", "Per-rule checkbox"],
-    ["code", "Monokai editor", "Ace, with autocompletion"],
+    ["layers", "CDN presets", "jQuery, Lodash, Axios, Tailwind"],
+    ["code", "JS and CSS tabs", "Ace editor, autocompletion"],
   ];
+  const nx = 876, nw = 334;
   notes.forEach(([ic, t, d], i) => {
-    const nx = 910, ny = 186 + i * 108;
-    inner += rrect(nx, ny, 290, 92, 18, C.cardFill, C.cardBorder, 1);
-    inner += icon(ic, nx + 20, ny + 20, 24, C.blue);
-    inner += `<text x="${nx + 56}" y="${ny + 38}" font-family="${FONT}" font-size="18" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
-    inner += `<text x="${nx + 20}" y="${ny + 72}" font-family="${MONO}" font-size="13.5" fill="${C.muted}">${esc(d)}</text>`;
+    const ny = 170 + i * 100;
+    inner += rrect(nx, ny, nw, 84, 18, C.cardFill, C.cardBorder, 1);
+    inner += icon(ic, nx + 20, ny + 18, 24, C.blue);
+    inner += `<text x="${nx + 56}" y="${ny + 36}" font-family="${FONT}" font-size="18" font-weight="700" fill="${C.text}">${esc(t)}</text>`;
+    inner += `<text x="${nx + 20}" y="${ny + 68}" font-family="${MONO}" font-size="13" fill="${C.muted}">${esc(d)}</text>`;
   });
-  inner += caption(480, 170 + shot.h + 32, "Actual rule editor — the rule used in the screenshots above");
-  await render("screenshot-5-editor-1280x800.png", W, H, inner);
+  // zoomed detail: the real Live CSS Sync checkbox from the editor's CSS tab
+  const detailY = 600;
+  const detail = await plainShot(nx, detailY, nw, SHOTS.editorCss, {
+    crop: { left: 1470, top: 900, width: 330, height: 58 },
+  });
+  inner += detail.svg;
+  inner += `<text x="${nx}" y="${detailY + detail.h + 34}" font-family="${FONT}" font-size="14.5" fill="${C.muted}">CSS edits reach the open tab in ~0.1s,</text>`;
+  inner += `<text x="${nx}" y="${detailY + detail.h + 54}" font-family="${FONT}" font-size="14.5" fill="${C.muted}">with no page reload.</text>`;
+  inner += caption(452, 170 + shot.h + 32, "Actual rule editor — the rule used in the screenshots above");
+  await render("screenshot-4-editor-1280x800.png", W, H, inner);
 }
 
-// ---- 8) SCREENSHOT 6 — LIVE CSS SYNC (CSS tab) -------------------------
-{
-  const W = 1280, H = 800;
-  let inner = "";
-  inner += heading("Live CSS Sync — styles land as you type", "Tick the box and every CSS keystroke hits the open tab in ~0.1s. No reload.", {
-    x: W / 2,
-    y: 96,
-    align: "middle",
-  });
-  // crop to the tab row + Live CSS toggle + code, then show it slightly enlarged
-  const shot = await windowShot(120, 176, 1040, "Js-Injection — Rule Editor / CSS", SHOTS.editorCss, {
-    kind: "title",
-    crop: { top: 880, height: 880 },
-  });
-  inner += shot.svg;
-  const row = pillRow(0, 176 + shot.h + 34, [
-    ["bolt", "~0.1s round trip"],
-    ["code", "Separate JS and CSS tabs"],
-    ["toggle", "Toggle live sync per edit"],
-  ], { size: 17 });
-  inner += `<g transform="translate(${(W - row.w) / 2},0)">${row.svg}</g>`;
-  await render("screenshot-6-live-css-1280x800.png", W, H, inner);
-}
-
-// ---- 9) SCREENSHOT 7 — MCP BRIDGE --------------------------------------
+// ---- 7) SCREENSHOT 5 — MCP BRIDGE --------------------------------------
 {
   const W = 1280, H = 800;
   let inner = "";
@@ -537,7 +541,7 @@ const SITE_URL = "demo.local:8899";
       tx += p.w + 10;
     }
   }
-  await render("screenshot-7-mcp-1280x800.png", W, H, inner);
+  await render("screenshot-5-mcp-1280x800.png", W, H, inner);
 }
 
 console.log("\nAll store images written to STOREIMG/store/");
