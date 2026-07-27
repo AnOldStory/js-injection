@@ -24,3 +24,6 @@ npm-debug.log*
 .env.*.local
 # Packaged extension
 *.zip
+
+# Throwaway browser profile used by scripts/capture-ui.mjs
+.capture-profile/

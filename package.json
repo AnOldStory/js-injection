@@ -25,7 +25,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "store:capture": "node scripts/capture-ui.mjs",
+    "store:images": "node scripts/gen-store-images.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -49,6 +51,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.0",
     "globals": "^16.0.0",
+    "playwright": "^1.62.0",
     "sass": "^1.87.0",
     "sharp": "^0.35.3",
     "vite": "^6.3.5"

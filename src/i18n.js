@@ -83,7 +83,12 @@ export const i18n = {
     mcpStatusDisconnected: "⚪ MCP 브릿지 연결 끊김",
     mcpGuideTitle: "📋 Claude Desktop / Antigravity 연동 가이드",
     mcpGuideStep1: "1. 일반 사용자 추천 (npx 또는 npx js-injection-mcp):",
-    mcpGuideStep2: "2. Claude Desktop 설정 파일(claude_desktop_config.json)에 아래 JSON 추가:"
+    mcpGuideStep2: "2. Claude Desktop 설정 파일(claude_desktop_config.json)에 아래 JSON 추가:",
+    mcpGuideOpen: "설정 가이드",
+    mcpGuideClose: "가이드 닫기",
+    mcpCopyConfig: "MCP 설정 JSON 복사하기",
+    mcpCopySuccess: "Claude Desktop MCP 설정 JSON이 클립보드에 복사되었습니다!",
+    tipMcp: "MCP 브릿지: 외부 AI 에이전트가 브라우저 주입 스크립트를 제어하도록 연결합니다."
   },
   en: {
     appTitle: "JS-Injection",
@@ -169,6 +174,11 @@ export const i18n = {
     mcpStatusDisconnected: "⚪ MCP Bridge Disconnected",
     mcpGuideTitle: "📋 Claude Desktop / Antigravity Setup Guide",
     mcpGuideStep1: "1. For General Users (npx auto run):",
-    mcpGuideStep2: "2. Add this JSON snippet to your Claude Desktop / IDE config (mcp.json):"
+    mcpGuideStep2: "2. Add this JSON snippet to your Claude Desktop / IDE config (mcp.json):",
+    mcpGuideOpen: "Setup Guide",
+    mcpGuideClose: "Close Guide",
+    mcpCopyConfig: "Copy MCP config JSON",
+    mcpCopySuccess: "MCP config JSON copied to clipboard!",
+    tipMcp: "MCP Bridge: lets an external AI agent drive the scripts injected into your browser."
   }
 };

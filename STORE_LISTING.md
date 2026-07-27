@@ -71,11 +71,20 @@ https://github.com/AnOldStory/js-injection
 https://github.com/AnOldStory/js-injection/issues
 ```
 
-**Graphic assets** (upload from `STOREIMG/store/`)
-- Screenshots (1280×800): `screenshot-1-hero`, `screenshot-2-features`, `screenshot-3-mcp`, `screenshot-4-editor`
+**Graphic assets** (upload from `STOREIMG/store/`, in this order)
+- Screenshots (1280×800): `screenshot-1-hero`, `screenshot-2-dashboard`, `screenshot-3-editor`, `screenshot-4-in-action`
 - Small promo tile (440×280): `small-promo-440x280.png`
 - Marquee promo tile (1400×560): `marquee-1400x560.png`
 - Store icon (128×128): `public/icon128.png`
+
+All four screenshots frame real captures of the built extension (v3.3.1, English UI).
+Regenerate them after any UI change:
+
+```bash
+npm run build
+node scripts/capture-ui.mjs      # real UI captures -> STOREIMG/raw/
+node scripts/gen-store-images.mjs # composed store images -> STOREIMG/store/
+```
 
 ---
 
