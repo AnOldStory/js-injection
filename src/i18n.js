@@ -1,3 +1,15 @@
+/**
+ * 사용자가 아직 언어를 고르지 않았을 때 쓰는 기본 언어.
+ * 브라우저 UI 언어가 한국어면 ko, 그 외에는 en.
+ */
+export function detectLang() {
+  const ui =
+    (typeof chrome !== "undefined" && chrome.i18n?.getUILanguage?.()) ||
+    navigator.language ||
+    "en";
+  return ui.toLowerCase().startsWith("ko") ? "ko" : "en";
+}
+
 export const i18n = {
   ko: {
     appTitle: "JS-Injection",

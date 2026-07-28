@@ -1,6 +1,6 @@
 {
   "name": "js-injection-mcp",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Official Model Context Protocol (MCP) Server and Chrome/Whale Extension for JS-Injection",
   "type": "module",
   "main": "./mcp-server.js",

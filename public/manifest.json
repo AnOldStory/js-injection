@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
   "author": "AnOldStory",
-  "version": "3.3.1",
-  "default_locale": "ko",
+  "version": "3.3.2",
+  "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "background": {
     "service_worker": "background.js",

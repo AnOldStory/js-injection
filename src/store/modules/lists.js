@@ -1,9 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { detectLang } from "../../i18n";
 
 const initialState = {
   all: {},
   globalEnabled: true,
-  lang: "ko",
+  lang: detectLang(),
 };
 
 const listsSlice = createSlice({
@@ -14,7 +15,7 @@ const listsSlice = createSlice({
       const { __globalEnabled, __lang, ...rules } = action.payload || {};
       state.all = rules;
       state.globalEnabled = __globalEnabled !== false;
-      state.lang = __lang || "ko";
+      state.lang = __lang || detectLang();
     },
     setGlobalEnabled(state, action) {
       state.globalEnabled = action.payload;

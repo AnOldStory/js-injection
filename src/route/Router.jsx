@@ -5,7 +5,7 @@ import Config from "_variables";
 
 import { useDispatch, useSelector } from "react-redux";
 import { set, setLang } from "store/modules/lists";
-import { i18n } from "../i18n";
+import { detectLang, i18n } from "../i18n";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCog, faGlobe } from "@fortawesome/free-solid-svg-icons";
@@ -27,17 +27,35 @@ function AppRouter() {
     [dispatch]
   );
 
+  /* v1/v2 규칙은 URL 문자열을 키로 쓰고 값에 url/nickname이 없다 */
+  const isLegacyRule = (value) =>
+    Array.isArray(value) || !(value && typeof value === "object" && "url" in value);
+
   const updateDB = useCallback(() => {
-    chrome.storage.sync.get(null, (storageList) => {
+    chrome.storage.sync.get(null, (items) => {
+      const stored = items || {};
+      const prefs = {
+        version: Config.version,
+        __globalEnabled: stored.__globalEnabled !== false,
+        __lang: stored.__lang || detectLang(),
+      };
+      const rules = Object.entries(stored).filter(
+        ([id]) => id !== "version" && !id.startsWith("__")
+      );
+
+      /* 이미 현재 포맷이면 버전만 갱신한다 — 규칙을 건드리면 안 된다 */
+      if (!rules.some(([, value]) => isLegacyRule(value))) {
+        chrome.storage.sync.set(prefs, () => loadStorageRef.current?.());
+        return;
+      }
+
+      /* v1/v2 업데이트 호환: 옛 포맷만 현재 포맷으로 옮긴다 */
       chrome.storage.sync.clear(() => {
-        chrome.storage.sync.set(
-          { version: Config.version, __globalEnabled: true, __lang: "ko" },
-          () => {
-            /* v1/v2 업데이트 호환 */
-            Object.entries(storageList || {}).forEach(([id, value], i) => {
-              if (id !== "version" && !id.startsWith("__")) {
-                chrome.storage.sync.set({
-                  [i]: {
+        chrome.storage.sync.set(prefs, () => {
+          rules.forEach(([id, value], i) => {
+            chrome.storage.sync.set({
+              [i]: isLegacyRule(value)
+                ? {
                     nickname: decodeURIComponent(id),
                     url: decodeURIComponent(id),
                     code: Array.isArray(value) ? value[0] : value.code || "",
@@ -46,13 +64,12 @@ function AppRouter() {
                     runAt: "document_start",
                     cssCode: "",
                     tags: "",
-                  },
-                });
-              }
+                  }
+                : value,
             });
-            loadStorageRef.current?.();
-          }
-        );
+          });
+          loadStorageRef.current?.();
+        });
       });
     });
   }, []);

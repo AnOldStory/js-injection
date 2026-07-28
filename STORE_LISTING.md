@@ -27,6 +27,10 @@ Developer Tools
 ```
 English (primary) — Korean also supported in-app
 ```
+> `manifest.json` uses `"default_locale": "en"`, so every locale without its own
+> `_locales/` folder falls back to English. Korean browsers still get the Korean
+> name/description from `_locales/ko`, and the in-app UI picks its language from
+> the browser UI language on first run (Korean → KO, everything else → EN).
 
 **Detailed description**
 ```
@@ -77,7 +81,7 @@ https://github.com/AnOldStory/js-injection/issues
 - Marquee promo tile (1400×560): `marquee-1400x560.png`
 - Store icon (128×128): `public/icon128.png`
 
-All four screenshots frame real captures of the built extension (v3.3.1, English UI).
+All four screenshots frame real captures of the built extension (v3.3.2, English UI).
 Regenerate them after any UI change:
 
 ```bash
