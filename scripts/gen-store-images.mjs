@@ -256,4 +256,21 @@ const TILE = b64(await logoTile(512));
   await render("screenshot-4-in-action-1280x800.png", W, H, inner);
 }
 
+// ============ 7) SCREENSHOT 5 — BILINGUAL UI ============
+{
+  const W = 1280, H = 800;
+  const crop = { h: 0.8 }; // same trim as the hero popup
+  const en = await capture("popup.png", crop);
+  const ko = await capture("popup-ko.png", crop);
+  const ef = await screen(en, { x: 130, y: 210, w: 480, h: 470, align: "top" }, "en");
+  const kf = await screen(ko, { x: 670, y: 210, w: 480, h: 470, align: "top" }, "ko");
+
+  let inner = `<text x="${W / 2}" y="96" font-family="${FONT}" font-size="40" font-weight="800" fill="${C.text}" text-anchor="middle">English and Korean, built in</text>`;
+  inner += `<text x="${W / 2}" y="136" font-family="${FONT}" font-size="20" fill="${C.muted}" text-anchor="middle">Follows your browser language on install — switch anytime from the header.</text>`;
+  inner += ef.svg + kf.svg;
+  inner += caption(ef.x + ef.w / 2, ef.y + ef.h + 40, "English — every locale outside Korean");
+  inner += caption(kf.x + kf.w / 2, kf.y + kf.h + 40, "한국어 — Korean browsers");
+  await render("screenshot-5-languages-1280x800.png", W, H, inner);
+}
+
 console.log("\nStore images written to STOREIMG/store/");

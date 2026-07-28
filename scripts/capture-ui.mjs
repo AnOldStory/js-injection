@@ -184,7 +184,7 @@ await sw.evaluate(
   [RULES, VERSION]
 );
 
-// ---- 1) popup (rule list) --------------------------------------------------
+// ---- 1) popup (rule list), in both UI languages ----------------------------
 {
   const page = await ctx.newPage();
   await page.setViewportSize({ width: 500, height: 660 });
@@ -192,6 +192,14 @@ await sw.evaluate(
   await page.waitForSelector(".main-link");
   await page.waitForTimeout(600);
   await shot(page, "popup.png");
+
+  // same popup after the language toggle — the extension ships KO + EN
+  await page.getByTitle("Language / 언어 변경").click();
+  await page.waitForTimeout(600);
+  await shot(page, "popup-ko.png");
+
+  await page.getByTitle("Language / 언어 변경").click();
+  await page.waitForTimeout(400);
   await page.close();
 }
 
