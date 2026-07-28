@@ -2,11 +2,12 @@
 
 <img width="140" height="140" src="https://raw.githubusercontent.com/AnOldStory/Js-Injection/master/STOREIMG/%EC%9B%90%EB%B3%B8.png?raw=true" alt="Js-Injection Logo">
 
-# Js-Injection v3.3.2
+# Js-Injection
 
 **JavaScript & CSS Injection Extension + AI MCP Bridge for Chromium Browsers (Chrome, Whale, Edge)**
 
-[![Version](https://img.shields.io/badge/version-v3.3.2-6C63FF?style=for-the-badge)](https://github.com/AnOldStory/Js-Injection/releases)
+[![Version](https://img.shields.io/github/v/release/AnOldStory/js-injection?style=for-the-badge&label=version&color=6C63FF)](https://github.com/AnOldStory/js-injection/releases/latest)
+[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/mijnijeicfcodlijkmafknapfcilffni?style=for-the-badge&label=live%20on%20store&color=4285F4)](https://chromewebstore.google.com/detail/js-injection/mijnijeicfcodlijkmafknapfcilffni)
 [![Manifest](https://img.shields.io/badge/Manifest-V3-4CAF50?style=for-the-badge&logo=googlechrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)

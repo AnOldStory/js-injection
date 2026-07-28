@@ -36,14 +36,8 @@ const TARGETS = [
     file: "src/_variables.js",
     find: /(version\s*:\s*")(\d+\.\d+\.\d+)(")/,
   },
-  {
-    file: "README.md",
-    find: /(# Js-Injection v)(\d+\.\d+\.\d+)()/,
-  },
-  {
-    file: "README.md",
-    find: /(badge\/version-v)(\d+\.\d+\.\d+)(-)/,
-  },
+  // README carries no version string of its own — its badges read the latest
+  // GitHub release and the live Chrome Web Store version from shields.io.
   {
     file: "mcp-server.js",
     find: /('js-injection-mcp-server',\s*version:\s*')(\d+\.\d+\.\d+)(')/,
