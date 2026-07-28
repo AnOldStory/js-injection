@@ -100,8 +100,10 @@ jobs:
       # npm에도 올라가야 한다. 인증은 토큰이 아니라 Trusted Publishing(OIDC)이라
       # 시크릿이 필요 없다 — npmjs.com > js-injection-mcp > Settings에서
       # 이 리포와 release.yml을 Trusted Publisher로 등록해두면 된다.
-      # 확장 배포가 끝난 뒤에 두어, 여기서 실패해도 스토어 게시는 이미 끝나 있다.
+      # 스토어와 npm은 서로 독립이다. 스토어 업로드는 이전 버전이 심사 중이면
+      # ITEM_NOT_UPDATABLE로 거절되는데, 그렇다고 npm 배포까지 막을 이유는 없다.
       - name: Publish to npm
+        if: ${{ !cancelled() }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           if npm view "js-injection-mcp@$VERSION" version >/dev/null 2>&1; then
