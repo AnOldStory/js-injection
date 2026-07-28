@@ -27,3 +27,6 @@ npm-debug.log*
 
 # Throwaway browser profile used by scripts/capture-ui.mjs
 .capture-profile/
+
+# Raw UI captures — regenerate with `npm run build && node scripts/capture-ui.mjs`
+STOREIMG/raw/*.png

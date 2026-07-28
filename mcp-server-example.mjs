@@ -1,8 +1,8 @@
 /**
  * Js-Injection MCP WebSocket Bridge Server Example
- * Run: node mcp-server-example.js
+ * Run: node mcp-server-example.mjs
  */
-const { WebSocketServer } = require('ws');
+import { WebSocketServer } from 'ws';
 
 const PORT = 3000;
 const wss = new WebSocketServer({ port: PORT, path: '/mcp' });

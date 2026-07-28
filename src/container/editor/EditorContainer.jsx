@@ -50,7 +50,9 @@ function EditorContainer() {
               setUrl(defaultPattern);
               setNickname(`${parsedUrl.hostname} Custom Script`);
             }
-          } catch {}
+          } catch {
+            // chrome:// 같은 파싱 불가 URL이면 기본값 없이 빈 폼으로 둔다
+          }
         }
       });
     }

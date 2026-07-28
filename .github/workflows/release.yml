@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
+          registry-url: "https://registry.npmjs.org"   # npm publish 인증용 .npmrc 생성
 
       # ── 3. 의존성 설치 ───────────────────────────────────────────
       - name: Install dependencies
@@ -43,11 +44,15 @@ jobs:
           fi
           npm run version:check
 
-      # ── 5. 프로덕션 빌드 ─────────────────────────────────────────
+      # ── 5. 린트 ──────────────────────────────────────────────────
+      - name: Lint
+        run: npm run lint
+
+      # ── 6. 프로덕션 빌드 ─────────────────────────────────────────
       - name: Build
         run: npm run build
 
-      # ── 6. dist/ 폴더를 zip으로 압축 ─────────────────────────────
+      # ── 7. dist/ 폴더를 zip으로 압축 ─────────────────────────────
       - name: Create zip
         run: |
           cd dist
@@ -62,7 +67,7 @@ jobs:
           print('extension.zip created')
           "
 
-      # ── 7. GitHub Release 생성 + zip 첨부 ────────────────────────
+      # ── 8. GitHub Release 생성 + zip 첨부 ────────────────────────
       # 변경 이력은 리포에 따로 두지 않는다. 릴리스 본문은 이전 태그 이후의
       # 커밋 제목으로 자동 생성되므로, 노트 품질은 곧 커밋 메시지 품질이다.
       - name: Create GitHub Release
@@ -73,7 +78,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 8. Chrome Web Store 업로드 & 게시 ────────────────────────
+      # ── 9. npm 배포 (MCP 서버) ───────────────────────────────────
+      # README가 `npx -y js-injection-mcp`를 안내하므로 확장과 같은 버전이
+      # npm에도 올라가야 한다. NPM_TOKEN이 없으면 조용히 건너뛴다.
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN secret is not set — skipping npm publish"
+            exit 0
+          fi
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "js-injection-mcp@$VERSION" version >/dev/null 2>&1; then
+            echo "js-injection-mcp@$VERSION is already on npm — skipping"
+            exit 0
+          fi
+          npm publish --access public
+
+      # ── 10. Chrome Web Store 업로드 & 게시 ───────────────────────
       - name: Publish to Chrome Web Store
         uses: mnao305/chrome-extension-upload@v6
         with:

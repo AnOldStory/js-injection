@@ -51,7 +51,7 @@ function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, css
           target: { tabId, allFrames: true },
           world: "MAIN",
           func: (userCode) => {
-            // eslint-disable-next-line no-eval
+            // MAIN world에서 사용자가 저장한 코드를 그대로 실행한다
             eval(userCode);
           },
           args: [code],

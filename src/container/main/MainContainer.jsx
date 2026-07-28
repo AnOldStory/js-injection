@@ -129,7 +129,7 @@ function MainContainer() {
           target: { tabId: tabs[0].id, allFrames: true },
           world: "MAIN",
           func: (code) => {
-            // eslint-disable-next-line no-eval
+            // MAIN world에서 사용자가 저장한 코드를 그대로 실행한다
             eval(code);
           },
           args: [UNLOCK_RIGHT_CLICK_SCRIPT],
