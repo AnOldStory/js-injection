@@ -25,6 +25,10 @@ jobs:
       # ── 3. 의존성 설치 ───────────────────────────────────────────
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+        env:
+          # playwright는 스토어 스크린샷 캡처용 devDependency다.
+          # 릴리스 빌드에는 브라우저가 필요 없으므로 다운로드를 건너뛴다.
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       # ── 4. 프로덕션 빌드 ─────────────────────────────────────────
       - name: Build
