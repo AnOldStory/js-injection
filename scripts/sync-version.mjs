@@ -111,10 +111,11 @@ if (check) {
 for (const d of drift) console.log(`  ${d}`);
 console.log(drift.length ? `✓ synced to ${version}` : `✓ already at ${version}`);
 
-// The release notes stay hand-written; just point out that the new version has
-// no section yet so it does not ship undocumented.
-if (!readFileSync(resolve(ROOT, "README.md"), "utf8").includes(`### **v${version}**`)) {
-  console.log(`! README has no "### **v${version}**" entry in Version History yet`);
+// The release body comes from CHANGELOG.md, so a missing section means the
+// release ships with commit-derived notes only. Warn while there is still time
+// to write one.
+if (!readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8").includes(`## v${version}`)) {
+  console.log(`! CHANGELOG.md has no "## v${version}" section yet — the release will fall back to generated notes`);
 }
 
 if (stage && written.size) {
