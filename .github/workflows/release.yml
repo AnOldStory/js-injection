@@ -13,11 +13,11 @@ jobs:
     steps:
       # ── 1. 코드 체크아웃 ──────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ── 2. Node.js 설정 ──────────────────────────────────────────
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: "npm"
@@ -51,7 +51,7 @@ jobs:
 
       # ── 6. GitHub Release 생성 + zip 첨부 ────────────────────────
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: extension.zip
           generate_release_notes: true   # 이전 태그 이후 커밋으로 자동 릴리즈 노트 생성
@@ -60,7 +60,7 @@ jobs:
 
       # ── 7. Chrome Web Store 업로드 & 게시 ────────────────────────
       - name: Publish to Chrome Web Store
-        uses: mnao305/chrome-extension-upload@v5.0.0
+        uses: mnao305/chrome-extension-upload@v6
         with:
           file-path: extension.zip
           extension-id: mijnijeicfcodlijkmafknapfcilffni
