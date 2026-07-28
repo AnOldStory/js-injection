@@ -30,11 +30,24 @@ jobs:
           # 릴리스 빌드에는 브라우저가 필요 없으므로 다운로드를 건너뛴다.
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
-      # ── 4. 프로덕션 빌드 ─────────────────────────────────────────
+      # ── 4. 태그 ↔ 버전 문자열 일치 확인 ──────────────────────────
+      # 태그와 package.json이 어긋나거나 README/manifest/mcp-server의 버전이
+      # 밀려 있으면 스토어에 올라가기 전에 여기서 멈춘다.
+      - name: Verify version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag v$TAG does not match package.json $PKG"
+            exit 1
+          fi
+          npm run version:check
+
+      # ── 5. 프로덕션 빌드 ─────────────────────────────────────────
       - name: Build
         run: npm run build
 
-      # ── 5. dist/ 폴더를 zip으로 압축 ─────────────────────────────
+      # ── 6. dist/ 폴더를 zip으로 압축 ─────────────────────────────
       - name: Create zip
         run: |
           cd dist
@@ -49,7 +62,7 @@ jobs:
           print('extension.zip created')
           "
 
-      # ── 6. GitHub Release 생성 + zip 첨부 ────────────────────────
+      # ── 7. GitHub Release 생성 + zip 첨부 ────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -58,7 +71,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 7. Chrome Web Store 업로드 & 게시 ────────────────────────
+      # ── 8. Chrome Web Store 업로드 & 게시 ────────────────────────
       - name: Publish to Chrome Web Store
         uses: mnao305/chrome-extension-upload@v6
         with:

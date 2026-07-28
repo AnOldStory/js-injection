@@ -26,6 +26,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
+    "version": "node scripts/sync-version.mjs --stage",
+    "version:check": "node scripts/sync-version.mjs --check",
     "store:capture": "node scripts/capture-ui.mjs",
     "store:images": "node scripts/gen-store-images.mjs"
   },
