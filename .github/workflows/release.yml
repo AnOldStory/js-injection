@@ -86,7 +86,7 @@ jobs:
 
       # ── 9. Chrome Web Store 업로드 & 게시 ────────────────────────
       - name: Publish to Chrome Web Store
-        uses: mnao305/chrome-extension-upload@v6
+        uses: mnao305/chrome-extension-upload@v6.0.0   # 이 액션은 부동 메이저 태그(v6)를 만들지 않는다
         with:
           file-path: extension.zip
           extension-id: mijnijeicfcodlijkmafknapfcilffni
