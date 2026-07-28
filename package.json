@@ -4,6 +4,14 @@
   "description": "Official Model Context Protocol (MCP) Server and Chrome/Whale Extension for JS-Injection",
   "type": "module",
   "main": "./mcp-server.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnOldStory/js-injection.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnOldStory/js-injection/issues"
+  },
+  "homepage": "https://github.com/AnOldStory/js-injection#readme",
   "bin": {
     "js-injection-mcp": "./mcp-server.js"
   },
