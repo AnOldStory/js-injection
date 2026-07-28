@@ -67,8 +67,8 @@ node /path/to/Js-Injection/mcp-server.js
 
 ## 📜 Version History (변경 이력)
 
-버전별 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에 있고, 태그를 push하면 그 내용이 그대로
-[GitHub Releases](https://github.com/AnOldStory/js-injection/releases)에 올라간다.
+버전별 변경 사항은 [GitHub Releases](https://github.com/AnOldStory/js-injection/releases)에서
+확인할 수 있다. 태그를 push하면 릴리스가 자동으로 만들어진다.
 
 ---
 

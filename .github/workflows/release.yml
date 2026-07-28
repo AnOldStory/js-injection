@@ -62,21 +62,18 @@ jobs:
           print('extension.zip created')
           "
 
-      # ── 7. CHANGELOG에서 이번 버전 섹션 추출 ────────────────────
-      - name: Prepare release notes
-        run: node scripts/release-notes.mjs --out RELEASE_NOTES.md
-
-      # ── 8. GitHub Release 생성 + zip 첨부 ────────────────────────
+      # ── 7. GitHub Release 생성 + zip 첨부 ────────────────────────
+      # 변경 이력은 리포에 따로 두지 않는다. 릴리스 본문은 이전 태그 이후의
+      # 커밋 제목으로 자동 생성되므로, 노트 품질은 곧 커밋 메시지 품질이다.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: extension.zip
-          body_path: RELEASE_NOTES.md    # CHANGELOG.md의 해당 버전 섹션
-          generate_release_notes: true   # 그 아래에 커밋 기반 자동 노트가 덧붙는다
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 9. Chrome Web Store 업로드 & 게시 ────────────────────────
+      # ── 8. Chrome Web Store 업로드 & 게시 ────────────────────────
       - name: Publish to Chrome Web Store
         uses: mnao305/chrome-extension-upload@v6
         with:

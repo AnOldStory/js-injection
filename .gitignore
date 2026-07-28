@@ -27,4 +27,3 @@ npm-debug.log*
 
 # Throwaway browser profile used by scripts/capture-ui.mjs
 .capture-profile/
-RELEASE_NOTES.md
