@@ -84,7 +84,7 @@ rl.on('line', async (line) => {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'js-injection-mcp-server', version: '3.3.3' }
+          serverInfo: { name: 'js-injection-mcp-server', version: '3.3.4' }
         }
       });
       return;
