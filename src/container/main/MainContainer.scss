@@ -18,6 +18,25 @@
   font-weight: bold;
 }
 
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: $title-color;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 .setting {
   color: $setting-color;
   border: 1px solid $setting-border;
@@ -28,6 +47,18 @@
 
 .setting:hover {
   background: $setting-background-hover;
+}
+
+.list-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 4px 0 6px 2px;
 }
 
 .main-bottom {

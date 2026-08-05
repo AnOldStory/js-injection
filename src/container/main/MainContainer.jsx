@@ -194,6 +194,8 @@ function MainContainer() {
     }
   };
 
+  const matchesCurrentTab = (item) => !!currentTabUrl && glob(item.url || "", currentTabUrl);
+
   // Filter rules by search query
   const filteredList = Object.entries(storageList).filter(([key, item]) => {
     if (key === "version" || key.startsWith("__")) return false;
@@ -211,8 +213,13 @@ function MainContainer() {
   // Calculate active tab matching count
   const matchingActiveCount = Object.entries(storageList).filter(([key, item]) => {
     if (key === "version" || key.startsWith("__")) return false;
-    return item.enabled !== false && currentTabUrl && glob(item.url || "", currentTabUrl);
+    return item.enabled !== false && matchesCurrentTab(item);
   }).length;
+
+  /* 규칙이 많아지면 지금 보고 있는 페이지에 걸리는 규칙부터 찾게 된다 — 위로 올린다 */
+  const matchedList = filteredList.filter(([, item]) => matchesCurrentTab(item));
+  const otherList = filteredList.filter(([, item]) => !matchesCurrentTab(item));
+  const grouped = matchedList.length > 0 && otherList.length > 0;
 
   const mainListUI = (
     <>
@@ -319,10 +326,28 @@ function MainContainer() {
         </div>
       </div>
 
-      {/* Rule List */}
+      {/* Rule List — 현재 페이지에 적용되는 규칙이 맨 위로 */}
       <div className="bottom" style={{ padding: "0 14px 14px 14px" }}>
         {filteredList.length > 0 ? (
-          filteredList.map(([id, value]) => <UrlLink id={id} {...value} key={id} />)
+          <>
+            {grouped && (
+              <div className="list-section-title" style={{ color: "#1565c0" }}>
+                <FontAwesomeIcon icon={faCheckCircle} /> {t("sectionForThisPage")} ({matchedList.length})
+              </div>
+            )}
+            {matchedList.map(([id, value]) => (
+              <UrlLink id={id} {...value} key={id} matched />
+            ))}
+
+            {grouped && (
+              <div className="list-section-title">
+                <FontAwesomeIcon icon={faList} /> {t("sectionOtherRules")} ({otherList.length})
+              </div>
+            )}
+            {otherList.map(([id, value]) => (
+              <UrlLink id={id} {...value} key={id} />
+            ))}
+          </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px", color: "#888", fontSize: "13px" }}>
             {searchQuery ? t("noSearchResults") : t("noRulesRegistered")}

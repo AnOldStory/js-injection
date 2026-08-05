@@ -4,7 +4,7 @@ import { useStorage } from "store/useStorage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faToggleOn, faToggleOff, faTag, faUnlock } from "@fortawesome/free-solid-svg-icons";
 
-function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, cssCode, jquery, customLibUrl, runAt }) {
+function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, cssCode, jquery, customLibUrl, runAt, matched }) {
   const { loadStorage, t } = useStorage();
   const isEnabled = enabled !== false;
 
@@ -67,7 +67,17 @@ function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, css
   const tagList = (tags || "").split(",").map((t) => t.trim()).filter(Boolean);
 
   return (
-    <div className={`main-link arrange btn-margin ${!isEnabled ? "disabled-rule" : ""}`} style={{ padding: "6px 10px", background: isEnabled ? "#fff" : "#f5f5f5", borderRadius: "4px", marginBottom: "6px", borderLeft: isEnabled ? "4px solid #4CAF50" : "4px solid #9e9e9e" }}>
+    <div
+      className={`main-link arrange btn-margin ${!isEnabled ? "disabled-rule" : ""}`}
+      style={{
+        padding: "6px 10px",
+        background: matched && isEnabled ? "#f4faff" : isEnabled ? "#fff" : "#f5f5f5",
+        borderRadius: "4px",
+        marginBottom: "6px",
+        borderLeft: isEnabled ? "4px solid #4CAF50" : "4px solid #9e9e9e",
+        boxShadow: matched ? "0 0 0 1px #90caf9" : "none",
+      }}
+    >
       <button
         onClick={handleToggle}
         title={isEnabled ? t("enabled") : t("disabled")}
@@ -86,6 +96,11 @@ function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, css
       <Link className="list-link btn" to={String(id)} style={{ flex: 1, textDecoration: "none", opacity: isEnabled ? 1 : 0.6 }}>
         <div style={{ fontWeight: "bold", fontSize: "14px", color: "#333", display: "flex", alignItems: "center", gap: "6px" }}>
           {nickname.length > 28 ? nickname.slice(0, 25) + "..." : nickname}
+          {matched && (
+            <span style={{ fontSize: "10px", background: "#e3f2fd", color: "#1565c0", padding: "1px 5px", borderRadius: "4px", whiteSpace: "nowrap" }} title={t("matchedBadgeTooltip")}>
+              {t("matchedBadge")}
+            </span>
+          )}
           {unlockRightClick && (
             <span style={{ fontSize: "10px", background: "#dcfce7", color: "#15803d", padding: "1px 5px", borderRadius: "4px" }} title="우클릭 해제 활성화됨">
               <FontAwesomeIcon icon={faUnlock} /> Unlock

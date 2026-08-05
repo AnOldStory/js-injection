@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import { HashRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 
 import Config from "_variables";
 
@@ -8,7 +8,7 @@ import { set, setLang } from "store/modules/lists";
 import { detectLang, i18n } from "../i18n";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCog, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faGlobe, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 import MainContainer from "container/main/MainContainer";
 import EditorContainer from "container/editor/EditorContainer";
@@ -23,6 +23,32 @@ function RouteTracker() {
   }, [pathname]);
 
   return null;
+}
+
+/* 편집 화면에서 목록으로 돌아가는 길 — 제목 클릭 말고는 방법이 없어서 눈에 띄게 둔다 */
+function BackButton({ t }) {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const isEditor = pathname !== "/";
+
+  useEffect(() => {
+    if (!isEditor) return undefined;
+    const handleKey = (e) => {
+      /* 코드 에디터 안에서는 Esc 가 에디터 몫이라 건드리지 않는다 */
+      if (e.key !== "Escape" || document.activeElement?.closest?.(".ace_editor")) return;
+      navigate("/");
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isEditor, navigate]);
+
+  if (!isEditor) return null;
+
+  return (
+    <button className="back-btn" onClick={() => navigate("/")} title={`${t("backToList")} (Esc)`}>
+      <FontAwesomeIcon icon={faArrowLeft} /> {t("backToList")}
+    </button>
+  );
 }
 
 function AppRouter() {
@@ -133,9 +159,12 @@ function AppRouter() {
     <HashRouter basename="/">
       <RouteTracker />
       <div className="top arrange">
-        <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
-          <div className="title">{t("appTitle")} <span style={{ fontSize: "11px", opacity: 0.7 }}>v{Config.version}</span></div>
-        </Link>
+        <div className="arrange" style={{ gap: "10px" }}>
+          <BackButton t={t} />
+          <Link to="/" style={{ color: "inherit", textDecoration: "none" }} title={t("backToList")}>
+            <div className="title">{t("appTitle")} <span style={{ fontSize: "11px", opacity: 0.7 }}>v{Config.version}</span></div>
+          </Link>
+        </div>
         <div className="small arrange" style={{ gap: "8px" }}>
           <div className="setting" onClick={handleToggleLang} style={{ cursor: "pointer" }} title="Language / 언어 변경">
             <FontAwesomeIcon icon={faGlobe} /> {lang.toUpperCase()}
