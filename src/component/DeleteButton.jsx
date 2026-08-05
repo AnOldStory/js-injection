@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useStorage } from "store/useStorage";
+import { clearDraft } from "store/session";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus } from "@fortawesome/free-solid-svg-icons";
 
@@ -10,6 +11,7 @@ function DeleteButton({ id }) {
     e.preventDefault();
     if (window.confirm(t("confirmDelete"))) {
       chrome.storage.sync.remove(String(id), () => {
+        clearDraft(String(id));
         loadStorage();
       });
     }

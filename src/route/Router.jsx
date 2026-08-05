@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import { HashRouter, Routes, Route, Link } from "react-router-dom";
+import { HashRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 
 import Config from "_variables";
 
@@ -12,6 +12,18 @@ import { faCog, faGlobe } from "@fortawesome/free-solid-svg-icons";
 
 import MainContainer from "container/main/MainContainer";
 import EditorContainer from "container/editor/EditorContainer";
+import { isPopup, saveRoute } from "store/session";
+
+/* 팝업이 다시 열릴 때 이어서 볼 수 있도록 현재 화면을 기록해 둔다 */
+function RouteTracker() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (isPopup()) saveRoute(pathname);
+  }, [pathname]);
+
+  return null;
+}
 
 function AppRouter() {
   const dispatch = useDispatch();
@@ -119,6 +131,7 @@ function AppRouter() {
 
   return (
     <HashRouter basename="/">
+      <RouteTracker />
       <div className="top arrange">
         <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
           <div className="title">{t("appTitle")} <span style={{ fontSize: "11px", opacity: 0.7 }}>v{Config.version}</span></div>

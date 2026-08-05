@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Config from "_variables";
 import { useSelector, useDispatch } from "react-redux";
 import { useStorage } from "store/useStorage";
+import { clearAllDrafts } from "store/session";
 import { setGlobalEnabled } from "store/modules/lists";
 import { UNLOCK_RIGHT_CLICK_SCRIPT } from "../../unlockRightClick";
 
@@ -143,6 +144,7 @@ function MainContainer() {
   const handleClear = () => {
     if (window.confirm(t("confirmDeleteAll"))) {
       chrome.storage.sync.clear(() => {
+        clearAllDrafts();
         chrome.storage.sync.set({ version: Config.version, __globalEnabled: true }, () => {
           loadStorage();
         });
@@ -165,6 +167,7 @@ function MainContainer() {
     fileReader.onload = () => {
       if (validate(fileReader.result)) {
         const result = JSON.parse(fileReader.result);
+        clearAllDrafts();
         chrome.storage.sync.clear(() => {
           chrome.storage.sync.set({ version: Config.version, __globalEnabled: true }, () => {
             for (let key in result) {

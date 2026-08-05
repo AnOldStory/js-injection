@@ -1,16 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useStorage } from "store/useStorage";
+import { clearDraft } from "store/session";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 
-function SaveButton({ editorState, isNew }) {
+function SaveButton({ editorState, isNew, draftKey }) {
   const navigate = useNavigate();
   const { loadStorage, t } = useStorage();
 
   const save = (id, stateData) => {
     chrome.storage.sync.set(
       { [id]: stateData },
-      () => { loadStorage(() => navigate("/")); }
+      () => {
+        /* 저장이 끝났으면 임시 보관본은 더 이상 필요 없다 */
+        clearDraft(draftKey ?? id);
+        loadStorage(() => navigate("/"));
+      }
     );
   };
 

@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react";
 import { useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { set } from "store/modules/lists";
 import { useStorage } from "store/useStorage";
+import { loadDraft, saveDraft, clearDraft } from "store/session";
 import SaveButton from "component/SaveButton";
 
 import "./EditorContainer.scss";
@@ -18,10 +17,63 @@ const AceEditor = lazy(() =>
   )
 );
 
+const EMPTY_STATE = {
+  id: "new",
+  nickname: "",
+  url: "",
+  code: "",
+  cssCode: "",
+  jquery: "none",
+  customLibUrl: "",
+  enabled: true,
+  unlockRightClick: false,
+  runAt: "document_start",
+  tags: "",
+  activeTab: "js",
+};
+
+/* 저장된 규칙(jquery 가 true/false 였던 구버전 포함)을 폼 상태로 편다 */
+function fromStored(item, id) {
+  let jquery = "none";
+  if (item.jquery === true) jquery = "jquery3";
+  else if (item.jquery && item.jquery !== false) jquery = item.jquery;
+
+  return {
+    ...EMPTY_STATE,
+    id,
+    nickname: item.nickname || "",
+    url: item.url || "",
+    code: item.code || "",
+    cssCode: item.cssCode || "",
+    jquery,
+    customLibUrl: item.customLibUrl || "",
+    enabled: item.enabled !== false,
+    unlockRightClick: !!item.unlockRightClick,
+    runAt: item.runAt || "document_start",
+    tags: item.tags || "",
+  };
+}
+
+/* 새 규칙이면 현재 탭 도메인을 미리 채워 준다 — 어디까지나 초기값이라 그대로 고칠 수 있다 */
+function withActiveTabUrl(base, tabUrl) {
+  try {
+    const parsed = new URL(tabUrl);
+    if (!parsed.protocol.startsWith("http")) return base;
+    return {
+      ...base,
+      url: `${parsed.protocol}//*.${parsed.hostname.replace(/^www\./, "")}/*`,
+      nickname: `${parsed.hostname} Custom Script`,
+    };
+  } catch {
+    return base; // chrome:// 같이 파싱 불가한 주소면 빈 폼으로 둔다
+  }
+}
+
+const FIELDS = Object.keys(EMPTY_STATE).sort();
+const serialize = (state) => JSON.stringify(FIELDS.map((key) => [key, state?.[key] ?? null]));
+
 function EditorContainer() {
   const { id: paramId } = useParams();
-  const dispatch = useDispatch();
-  const storageList = useSelector((state) => state.lists.all);
   const { t } = useStorage();
 
   const [id, setId] = useState(paramId);
@@ -37,26 +89,81 @@ function EditorContainer() {
   const [tags, setTags] = useState("");
   const [activeTab, setActiveTab] = useState("js");
   const [liveCss, setLiveCss] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
-  // Auto-fill active tab URL for new rules
-  useEffect(() => {
-    if (paramId === "new" && chrome.tabs?.query) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs?.[0]?.url) {
-          try {
-            const parsedUrl = new URL(tabs[0].url);
-            if (parsedUrl.protocol.startsWith("http")) {
-              const defaultPattern = `${parsedUrl.protocol}//*.${parsedUrl.hostname.replace(/^www\./, "")}/*`;
-              setUrl(defaultPattern);
-              setNickname(`${parsedUrl.hostname} Custom Script`);
-            }
-          } catch {
-            // chrome:// 같은 파싱 불가 URL이면 기본값 없이 빈 폼으로 둔다
-          }
+  /* 저장소에 들어있는 원본 — 임시 저장본과 비교하고 '되돌리기'의 기준이 된다 */
+  const baselineRef = useRef(null);
+  const loadedForRef = useRef(null);
+
+  const applyState = useCallback((state) => {
+    setId(state.id);
+    setNickname(state.nickname);
+    setUrl(state.url);
+    setCode(state.code);
+    setCssCode(state.cssCode);
+    setJquery(state.jquery);
+    setCustomLibUrl(state.customLibUrl);
+    setEnabled(state.enabled);
+    setUnlockRightClick(state.unlockRightClick);
+    setRunAt(state.runAt);
+    setTags(state.tags);
+    setActiveTab(state.activeTab || "js");
+  }, []);
+
+  /* 저장소에서 이 화면의 원본 상태를 만든다 (새 규칙이면 다음 번호 + 자동 입력) */
+  const buildBaseline = useCallback(
+    (done) => {
+      chrome.storage.sync.get(null, (items) => {
+        const stored = items || {};
+
+        if (paramId !== "new") {
+          done(fromStored(stored[paramId] || {}, paramId));
+          return;
         }
+
+        let maxnum = 0;
+        Object.keys(stored).forEach((key) => {
+          if (key !== "" && !isNaN(Number(key)) && maxnum < Number(key)) maxnum = Number(key);
+        });
+        const base = { ...EMPTY_STATE, id: maxnum + 1 };
+
+        if (!chrome.tabs?.query) {
+          done(base);
+          return;
+        }
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          done(tabs?.[0]?.url ? withActiveTabUrl(base, tabs[0].url) : base);
+        });
       });
-    }
-  }, [paramId]);
+    },
+    [paramId]
+  );
+
+  /*
+   * 폼은 화면당 딱 한 번만 채운다. 다른 창의 저장이나 storage 변경 때문에
+   * 다시 읽어오면 입력 중이던 URL·코드가 계속 원래대로 되돌아간다.
+   */
+  useEffect(() => {
+    if (loadedForRef.current === paramId) return;
+    loadedForRef.current = paramId;
+
+    buildBaseline((base) => {
+      baselineRef.current = base;
+      loadDraft(paramId, (draft) => {
+        /* 규칙 번호만은 항상 지금 저장소 기준으로 — 묵혀 둔 초안이 기존 규칙을 덮어쓰면 안 된다 */
+        const merged = draft ? { ...base, ...draft, id: base.id } : base;
+        if (draft && serialize(merged) !== serialize(base)) {
+          applyState(merged);
+          setDraftRestored(true);
+        } else {
+          applyState(base);
+          if (draft) clearDraft(paramId);
+        }
+        setReady(true);
+      });
+    });
+  }, [paramId, buildBaseline, applyState]);
 
   // LIVE CSS SYNC: Apply CSS changes immediately to active tab without reload
   const handleCssChange = (newCss) => {
@@ -86,42 +193,6 @@ function EditorContainer() {
     }
   };
 
-  const loadList = useCallback(() => {
-    chrome.storage.sync.get(null, (items) => {
-      const { version: _, ...rest } = items || {};
-      dispatch(set(rest));
-      const item = rest[paramId];
-      if (item) {
-        setNickname(item.nickname || "");
-        setUrl(item.url || "");
-        setCode(item.code || "");
-        setCssCode(item.cssCode || "");
-
-        if (item.jquery === true) setJquery("jquery3");
-        else if (item.jquery === false || !item.jquery) setJquery("none");
-        else setJquery(item.jquery);
-
-        setCustomLibUrl(item.customLibUrl || "");
-        setEnabled(item.enabled !== false);
-        setUnlockRightClick(item.unlockRightClick || false);
-        setRunAt(item.runAt || "document_start");
-        setTags(item.tags || "");
-      }
-    });
-  }, [dispatch, paramId]);
-
-  useEffect(() => {
-    if (paramId !== "new") {
-      loadList();
-    } else {
-      let maxnum = 0;
-      Object.keys(storageList).forEach((key) => {
-        if (!isNaN(Number(key)) && maxnum < Number(key)) maxnum = Number(key);
-      });
-      setId(maxnum + 1);
-    }
-  }, [paramId, loadList, storageList]);
-
   const editorState = {
     id,
     nickname,
@@ -136,8 +207,95 @@ function EditorContainer() {
     tags,
   };
 
+  /*
+   * 팝업은 웹페이지를 클릭하는 순간 닫히면서 통째로 사라진다.
+   * 저장 전 편집 내용을 계속 임시 보관해 두고, 다시 열릴 때 위에서 복원한다.
+   */
+  const snapshotRef = useRef(null);
+  snapshotRef.current = ready ? { ...editorState, activeTab } : null;
+
+  useEffect(() => {
+    if (!ready) return undefined;
+
+    const flush = () => {
+      const snapshot = snapshotRef.current;
+      if (!snapshot) return;
+      if (baselineRef.current && serialize(snapshot) === serialize(baselineRef.current)) {
+        clearDraft(paramId);
+      } else {
+        saveDraft(paramId, snapshot);
+      }
+    };
+
+    const timer = setTimeout(flush, 250);
+    /* 팝업이 닫히기 직전 마지막 입력까지 챙긴다 */
+    window.addEventListener("pagehide", flush);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [
+    ready,
+    paramId,
+    id,
+    nickname,
+    url,
+    code,
+    cssCode,
+    jquery,
+    customLibUrl,
+    enabled,
+    unlockRightClick,
+    runAt,
+    tags,
+    activeTab,
+  ]);
+
+  const handleDiscardDraft = () => {
+    clearDraft(paramId);
+    if (baselineRef.current) applyState(baselineRef.current);
+    setDraftRestored(false);
+  };
+
   return (
     <div className="editor" style={{ padding: "12px" }}>
+      {/* Restored Draft Notice */}
+      {draftRestored && (
+        <div
+          style={{
+            marginBottom: "12px",
+            padding: "8px 12px",
+            background: "#fff8e1",
+            border: "1px solid #ffe082",
+            borderRadius: "6px",
+            fontSize: "12px",
+            color: "#8d6e00",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span>⏱ {t("draftRestored")}</span>
+          <button
+            onClick={handleDiscardDraft}
+            style={{
+              background: "transparent",
+              border: "1px solid #ffca28",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "11px",
+              fontWeight: "bold",
+              color: "#8d6e00",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t("draftDiscard")}
+          </button>
+        </div>
+      )}
+
       {/* Rule Name & Enabled Toggle */}
       <div className="nickname" style={{ marginBottom: "12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
@@ -174,6 +332,11 @@ function EditorContainer() {
           className="block"
           style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
         />
+        {paramId === "new" && url && !draftRestored && (
+          <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
+            {t("autoFilledUrl")}
+          </div>
+        )}
       </div>
 
       {/* Unlock Right Click Option */}
@@ -335,7 +498,7 @@ function EditorContainer() {
       </Suspense>
 
       <div style={{ marginTop: "12px" }}>
-        <SaveButton editorState={editorState} isNew={paramId === "new"} />
+        <SaveButton editorState={editorState} isNew={paramId === "new"} draftKey={paramId} />
       </div>
     </div>
   );
