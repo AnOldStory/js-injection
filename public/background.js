@@ -81,20 +81,28 @@ const UNLOCK_CODE = `
 })();
 `;
 
-/* Load storage on startup */
-chrome.storage.sync.get(null, (items) => {
-  storageList = items || {};
-  console.log("[Js-Injection] Storage loaded:", Object.keys(storageList).length, "items");
+/* Load storage on startup.
+   The service worker is torn down after ~30s idle and revived by the very
+   beforeLoad message it has to answer, so handlers must await this instead of
+   reading storageList synchronously — otherwise they see an empty list and
+   silently inject nothing. */
+const storageReady = new Promise((resolve) => {
+  chrome.storage.sync.get(null, (items) => {
+    storageList = items || {};
+    console.log("[Js-Injection] Storage loaded:", Object.keys(storageList).length, "items");
 
-  // Auto-connect MCP if enabled
-  if (storageList.__mcpEnabled) {
-    ensureOffscreenDocument().then(() => {
-      chrome.runtime.sendMessage({
-        type: "CONNECT_MCP",
-        url: storageList.__mcpUrl || "ws://localhost:3000/mcp",
+    // Auto-connect MCP if enabled
+    if (storageList.__mcpEnabled) {
+      ensureOffscreenDocument().then(() => {
+        chrome.runtime.sendMessage({
+          type: "CONNECT_MCP",
+          url: storageList.__mcpUrl || "ws://localhost:3000/mcp",
+        });
       });
-    });
-  }
+    }
+
+    resolve();
+  });
 });
 
 /* Watch for storage changes */
@@ -171,75 +179,84 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.state === "beforeLoad") {
-    if (storageList.__globalEnabled === false) {
-      sendResponse([]);
-      return true;
-    }
-
-    const librariesToInject = [];
-    const injections = [];
-
-    const url = sender.url ?? "";
-    const isInjectable = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("file://");
-    if (!isInjectable) {
-      sendResponse([]);
-      return true;
-    }
-
-    for (const key in storageList) {
-      if (key === "version" || key.startsWith("__")) continue;
-      const item = storageList[key];
-      if (!item?.url) continue;
-
-      if (item.enabled === false) continue;
-
-      if (glob(item.url, sender.url)) {
-        const libUrl = getLibraryUrl(item);
-        if (libUrl && !librariesToInject.includes(libUrl)) {
-          librariesToInject.push(libUrl);
-        }
-
-        if (item.unlockRightClick) {
-          injections.push(
-            chrome.scripting.executeScript({
-              target: { tabId: sender.tab.id, allFrames: true },
-              world: "MAIN",
-              func: (code) => {
-                // eslint-disable-next-line no-eval
-                eval(code);
-              },
-              args: [UNLOCK_CODE],
-            })
-          );
-        }
-
-        if (item.cssCode) {
-          chrome.scripting.insertCSS({
-            target: { tabId: sender.tab.id, allFrames: true },
-            css: item.cssCode,
-          }).catch(() => {});
-        }
-
-        if (item.code) {
-          injections.push(
-            chrome.scripting.executeScript({
-              target: { tabId: sender.tab.id, allFrames: true },
-              world: "MAIN",
-              func: (code) => {
-                // eslint-disable-next-line no-eval
-                eval(code);
-              },
-              args: [item.code],
-            })
-          );
-        }
-      }
-    }
-
-    Promise.allSettled(injections).then(() => {
-      sendResponse(librariesToInject);
-    });
-
+    storageReady.then(() => handleBeforeLoad(sender, sendResponse));
     return true;
   }
 });
+
+function handleBeforeLoad(sender, sendResponse) {
+  if (storageList.__globalEnabled === false) {
+    sendResponse([]);
+    return;
+  }
+
+  const librariesToInject = [];
+  const injections = [];
+
+  const url = sender.url ?? "";
+  const isInjectable = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("file://");
+  if (!isInjectable) {
+    sendResponse([]);
+    return;
+  }
+
+  for (const key in storageList) {
+    if (key === "version" || key.startsWith("__")) continue;
+    const item = storageList[key];
+    if (!item?.url) continue;
+
+    if (item.enabled === false) continue;
+
+    if (glob(item.url, sender.url)) {
+      const libUrl = getLibraryUrl(item);
+      if (libUrl && !librariesToInject.includes(libUrl)) {
+        librariesToInject.push(libUrl);
+      }
+
+      // executeScript defaults to injecting at document_idle, which loses the
+      // race against anything the page itself runs. Honour the rule's runAt.
+      const injectImmediately = (item.runAt || "document_start") === "document_start";
+
+      if (item.unlockRightClick) {
+        injections.push(
+          chrome.scripting.executeScript({
+            target: { tabId: sender.tab.id, allFrames: true },
+            world: "MAIN",
+            injectImmediately,
+            func: (code) => {
+              // eslint-disable-next-line no-eval
+              eval(code);
+            },
+            args: [UNLOCK_CODE],
+          })
+        );
+      }
+
+      if (item.cssCode) {
+        chrome.scripting.insertCSS({
+          target: { tabId: sender.tab.id, allFrames: true },
+          css: item.cssCode,
+        }).catch(() => {});
+      }
+
+      if (item.code) {
+        injections.push(
+          chrome.scripting.executeScript({
+            target: { tabId: sender.tab.id, allFrames: true },
+            world: "MAIN",
+            injectImmediately,
+            func: (code) => {
+              // eslint-disable-next-line no-eval
+              eval(code);
+            },
+            args: [item.code],
+          })
+        );
+      }
+    }
+  }
+
+  Promise.allSettled(injections).then(() => {
+    sendResponse(librariesToInject);
+  });
+}
