@@ -8,7 +8,8 @@ import { WebSocketServer } from 'ws';
 import readline from 'readline';
 
 const PORT = 3000;
-const wss = new WebSocketServer({ port: PORT, path: '/mcp' });
+// Loopback only — this socket can push arbitrary JS into the browser.
+const wss = new WebSocketServer({ port: PORT, path: '/mcp', host: '127.0.0.1' });
 
 let activeExtensionSocket = null;
 let pendingRequests = new Map();
