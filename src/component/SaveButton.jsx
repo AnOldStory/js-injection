@@ -1,48 +1,53 @@
 import { useNavigate } from "react-router-dom";
 import { useStorage } from "store/useStorage";
 import { clearDraft } from "store/session";
+import { saveRule, isNumericId } from "shared/rule-store";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 
-function SaveButton({ editorState, isNew, draftKey }) {
+function SaveButton({ editorState, draftKey }) {
   const navigate = useNavigate();
   const { loadStorage, t } = useStorage();
 
-  const save = (id, stateData) => {
-    chrome.storage.sync.set(
-      { [id]: stateData },
-      () => {
-        /* 저장이 끝났으면 임시 보관본은 더 이상 필요 없다 */
-        clearDraft(draftKey ?? id);
-        loadStorage(() => navigate("/"));
-      }
-    );
-  };
-
-  const handleSync = () => {
-    let { id, nickname, url, code, cssCode, jquery, customLibUrl, enabled, unlockRightClick, runAt, tags } = editorState;
-    if (!url) url = "https://*.example.com/";
-    if (!nickname) nickname = url;
-
-    const dataToSave = {
+  const handleSync = async () => {
+    const {
+      id,
       nickname,
       url,
       code,
+      cssCode,
+      jquery,
+      enabled,
+      unlockRightClick,
+      runAt,
+      tags,
+    } = editorState;
+
+    /* Only numeric ids are router-safe.  A legacy URL-shaped key cannot be
+       addressed through `/:id` (useParams decodes it), so saving it would
+       create another unopenable rule — allocate a fresh numeric id instead. */
+    const candidate = String(id);
+    const ruleId = candidate !== "new" && isNumericId(candidate) ? candidate : String(Date.now());
+
+    const rule = {
+      nickname: (nickname || "").trim() || (url || "").trim(),
+      url: (url || "").trim(),
+      code: code || "",
       cssCode: cssCode || "",
       jquery: jquery || "none",
-      customLibUrl: customLibUrl || "",
       enabled: enabled !== false,
       unlockRightClick: !!unlockRightClick,
       runAt: runAt || "document_start",
       tags: tags || "",
     };
 
-    if (!isNew) {
-      chrome.storage.sync.remove(String(id), () => {
-        save(id, dataToSave);
-      });
-    } else {
-      save(id, dataToSave);
+    try {
+      await saveRule(ruleId, rule);
+      /* 저장이 끝났으면 임시 보관본은 더 이상 필요 없다 */
+      clearDraft(draftKey ?? ruleId);
+      loadStorage(() => navigate("/"));
+    } catch (error) {
+      alert(`${t("saveFailed")}\n${error?.message || error}`);
     }
   };
 

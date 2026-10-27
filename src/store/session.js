@@ -11,6 +11,8 @@ const DRAFT_PREFIX = "__draft_";
 const ROUTE_KEY = "__lastRoute";
 /* 오래된 화면까지 되살리면 오히려 혼란스러워서 1시간까지만 이어서 복원한다 */
 const ROUTE_TTL = 60 * 60 * 1000;
+/* 초안 하나가 차지할 수 있는 최대 코드 길이 (규칙 1MB 상한보다 작게) */
+const MAX_DRAFT_CHARS = 512 * 1024;
 
 let tabPage = false;
 
@@ -49,7 +51,30 @@ export function loadDraft(id, callback) {
 }
 
 export function saveDraft(id, data) {
-  chrome.storage.local.set({ [draftKey(id)]: data });
+  const key = draftKey(id);
+
+  /* Drafts are a convenience, not data: a single 1 MB rule must not push the
+     rule set over the storage quota (which would make saving fail). */
+  const codeLength = (data?.code?.length || 0) + (data?.cssCode?.length || 0);
+  if (codeLength > MAX_DRAFT_CHARS) return;
+
+  chrome.storage.local.set({ [key]: data }, () => {
+    if (!chrome.runtime.lastError) return;
+
+    /* Quota exceeded: evict the other drafts and retry once.  Losing an
+       abandoned draft is acceptable; blocking a real save is not. */
+    chrome.storage.local.get(null, (items) => {
+      void chrome.runtime.lastError;
+      const others = Object.keys(items || {}).filter(
+        (itemKey) => itemKey.startsWith(DRAFT_PREFIX) && itemKey !== key
+      );
+      if (!others.length) return;
+      chrome.storage.local.remove(others, () => {
+        void chrome.runtime.lastError;
+        chrome.storage.local.set({ [key]: data }, () => void chrome.runtime.lastError);
+      });
+    });
+  });
 }
 
 export function clearDraft(id, callback) {

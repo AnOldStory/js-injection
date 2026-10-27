@@ -31,7 +31,7 @@ jobs:
 
       # ── 3. 의존성 설치 ───────────────────────────────────────────
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
         env:
           # playwright는 스토어 스크린샷 캡처용 devDependency다.
           # 릴리스 빌드에는 브라우저가 필요 없으므로 다운로드를 건너뛴다.
@@ -54,11 +54,15 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # ── 6. 프로덕션 빌드 ─────────────────────────────────────────
+      # ── 6. 단위 테스트 ───────────────────────────────────────────
+      - name: Test
+        run: npm test
+
+      # ── 7. 프로덕션 빌드 ─────────────────────────────────────────
       - name: Build
         run: npm run build
 
-      # ── 7. dist/ 폴더를 zip으로 압축 ─────────────────────────────
+      # ── 8. dist/ 폴더를 zip으로 압축 ─────────────────────────────
       - name: Create zip
         run: |
           cd dist
@@ -73,7 +77,7 @@ jobs:
           print('extension.zip created')
           "
 
-      # ── 8. GitHub Release 생성 + zip 첨부 ────────────────────────
+      # ── 9. GitHub Release 생성 + zip 첨부 ────────────────────────
       # 변경 이력은 리포에 따로 두지 않는다. 릴리스 본문은 이전 태그 이후의
       # 커밋 제목으로 자동 생성되므로, 노트 품질은 곧 커밋 메시지 품질이다.
       - name: Create GitHub Release
@@ -84,7 +88,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 9. Chrome Web Store 업로드 & 게시 ────────────────────────
+      # ── 10. Chrome Web Store 업로드 & 게시 ────────────────────────
       - name: Publish to Chrome Web Store
         uses: mnao305/chrome-extension-upload@v6.0.0   # 이 액션은 부동 메이저 태그(v6)를 만들지 않는다
         with:
@@ -95,7 +99,7 @@ jobs:
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
           publish: true   # false로 하면 업로드만 하고 게시는 수동으로
 
-      # ── 10. npm 배포 (MCP 서버) ──────────────────────────────────
+      # ── 11. npm 배포 (MCP 서버) ──────────────────────────────────
       # README가 `npx -y js-injection-mcp`를 안내하므로 확장과 같은 버전이
       # npm에도 올라가야 한다. 인증은 토큰이 아니라 Trusted Publishing(OIDC)이라
       # 시크릿이 필요 없다 — npmjs.com > js-injection-mcp > Settings에서

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react"
 import { useParams } from "react-router-dom";
 import { useStorage } from "store/useStorage";
 import { loadDraft, saveDraft, clearDraft } from "store/session";
+import { sanitizeRule, nextRuleId } from "shared/rule-store";
+import { matchesRule } from "shared/url-match";
 import SaveButton from "component/SaveButton";
 
 import "./EditorContainer.scss";
@@ -24,7 +26,6 @@ const EMPTY_STATE = {
   code: "",
   cssCode: "",
   jquery: "none",
-  customLibUrl: "",
   enabled: true,
   unlockRightClick: false,
   runAt: "document_start",
@@ -32,21 +33,16 @@ const EMPTY_STATE = {
   activeTab: "js",
 };
 
-/* 저장된 규칙(jquery 가 true/false 였던 구버전 포함)을 폼 상태로 편다 */
+/* Turn a sanitised stored rule into form state. */
 function fromStored(item, id) {
-  let jquery = "none";
-  if (item.jquery === true) jquery = "jquery3";
-  else if (item.jquery && item.jquery !== false) jquery = item.jquery;
-
   return {
     ...EMPTY_STATE,
-    id,
+    id: String(id),
     nickname: item.nickname || "",
     url: item.url || "",
     code: item.code || "",
     cssCode: item.cssCode || "",
-    jquery,
-    customLibUrl: item.customLibUrl || "",
+    jquery: item.jquery || "none",
     enabled: item.enabled !== false,
     unlockRightClick: !!item.unlockRightClick,
     runAt: item.runAt || "document_start",
@@ -59,9 +55,16 @@ function withActiveTabUrl(base, tabUrl) {
   try {
     const parsed = new URL(tabUrl);
     if (!parsed.protocol.startsWith("http")) return base;
+
+    /* `*.` cannot prefix an IP literal or localhost — that would produce an
+       invalid pattern and a validation error on save. */
+    const host = parsed.hostname;
+    const isLiteral = host.startsWith("[") || host === "localhost" || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+    const patternHost = isLiteral ? host : `*.${host.replace(/^www\./, "")}`;
+
     return {
       ...base,
-      url: `${parsed.protocol}//*.${parsed.hostname.replace(/^www\./, "")}/*`,
+      url: `${parsed.protocol}//${patternHost}/*`,
       nickname: `${parsed.hostname} Custom Script`,
     };
   } catch {
@@ -82,7 +85,6 @@ function EditorContainer() {
   const [code, setCode] = useState("");
   const [cssCode, setCssCode] = useState("");
   const [jquery, setJquery] = useState("none");
-  const [customLibUrl, setCustomLibUrl] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [unlockRightClick, setUnlockRightClick] = useState(false);
   const [runAt, setRunAt] = useState("document_start");
@@ -96,6 +98,15 @@ function EditorContainer() {
   const baselineRef = useRef(null);
   const loadedForRef = useRef(null);
 
+  /* Live CSS 는 입력할 때마다 주입하지 않고 잠깐 모아서 한 번만 적용한다. */
+  const liveCssTimerRef = useRef(null);
+  const urlRef = useRef(url);
+  const idRef = useRef(id);
+  const liveCssRef = useRef(liveCss);
+  urlRef.current = url;
+  idRef.current = id;
+  liveCssRef.current = liveCss;
+
   const applyState = useCallback((state) => {
     setId(state.id);
     setNickname(state.nickname);
@@ -103,7 +114,6 @@ function EditorContainer() {
     setCode(state.code);
     setCssCode(state.cssCode);
     setJquery(state.jquery);
-    setCustomLibUrl(state.customLibUrl);
     setEnabled(state.enabled);
     setUnlockRightClick(state.unlockRightClick);
     setRunAt(state.runAt);
@@ -114,19 +124,16 @@ function EditorContainer() {
   /* 저장소에서 이 화면의 원본 상태를 만든다 (새 규칙이면 다음 번호 + 자동 입력) */
   const buildBaseline = useCallback(
     (done) => {
-      chrome.storage.sync.get(null, (items) => {
+      chrome.storage.local.get(null, (items) => {
         const stored = items || {};
 
         if (paramId !== "new") {
-          done(fromStored(stored[paramId] || {}, paramId));
+          const sanitized = stored[paramId] ? sanitizeRule(stored[paramId], paramId) : null;
+          done(sanitized ? fromStored(sanitized, paramId) : { ...EMPTY_STATE, id: paramId });
           return;
         }
 
-        let maxnum = 0;
-        Object.keys(stored).forEach((key) => {
-          if (key !== "" && !isNaN(Number(key)) && maxnum < Number(key)) maxnum = Number(key);
-        });
-        const base = { ...EMPTY_STATE, id: maxnum + 1 };
+        const base = { ...EMPTY_STATE, id: nextRuleId(stored) };
 
         if (!chrome.tabs?.query) {
           done(base);
@@ -165,19 +172,45 @@ function EditorContainer() {
     });
   }, [paramId, buildBaseline, applyState]);
 
-  // LIVE CSS SYNC: Apply CSS changes immediately to active tab without reload
-  const handleCssChange = (newCss) => {
-    setCssCode(newCss);
-    if (!liveCss) return;
+  useEffect(() => {
+    return () => {
+      if (liveCssTimerRef.current) clearTimeout(liveCssTimerRef.current);
+    };
+  }, []);
 
-    if (chrome.tabs?.query) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs?.[0]?.id) return;
-        const tabId = tabs[0].id;
+  /*
+   * LIVE CSS SYNC: only touch the active tab when the rule's own URL pattern
+   * matches it.  Matching a pattern against the page URL here is the same
+   * anchored matcher the service worker uses, so the preview cannot leak onto
+   * an unrelated site.
+   */
+  const applyLiveCss = useCallback((cssText) => {
+    if (!chrome.tabs?.query) return;
 
-        chrome.scripting.executeScript({
-          target: { tabId },
-          func: (cssText, ruleId) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs?.[0];
+      if (!tab?.id) return;
+
+      /* Removing the preview must work even after the URL field was cleared. */
+      if (!cssText) {
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tab.id },
+            func: (ruleId) => {
+              document.getElementById(`js-injection-live-style-${ruleId}`)?.remove();
+            },
+            args: [String(idRef.current)],
+          })
+          .catch(() => {});
+        return;
+      }
+
+      if (!matchesRule(urlRef.current, tab.url || "")) return;
+
+      chrome.scripting
+        .executeScript({
+          target: { tabId: tab.id },
+          func: (text, ruleId) => {
             const styleId = `js-injection-live-style-${ruleId}`;
             let styleEl = document.getElementById(styleId);
             if (!styleEl) {
@@ -185,10 +218,48 @@ function EditorContainer() {
               styleEl.id = styleId;
               (document.head || document.documentElement).appendChild(styleEl);
             }
-            styleEl.textContent = cssText;
+            styleEl.textContent = text;
           },
-          args: [newCss, id],
-        }).catch(() => {});
+          args: [cssText, String(idRef.current)],
+        })
+        .catch(() => {});
+    });
+  }, []);
+
+  const handleCssChange = (newCss) => {
+    setCssCode(newCss);
+
+    if (liveCssTimerRef.current) clearTimeout(liveCssTimerRef.current);
+    if (!liveCssRef.current) return;
+
+    liveCssTimerRef.current = setTimeout(() => {
+      liveCssTimerRef.current = null;
+      applyLiveCss(newCss);
+    }, 250);
+  };
+
+  const handleLiveCssToggle = (checked) => {
+    setLiveCss(checked);
+    liveCssRef.current = checked;
+
+    if (liveCssTimerRef.current) {
+      clearTimeout(liveCssTimerRef.current);
+      liveCssTimerRef.current = null;
+    }
+    if (checked) applyLiveCss(cssCode);
+    else if (idRef.current) {
+      chrome.tabs?.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs?.[0];
+        if (!tab?.id) return;
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tab.id },
+            func: (ruleId) => {
+              document.getElementById(`js-injection-live-style-${ruleId}`)?.remove();
+            },
+            args: [String(idRef.current)],
+          })
+          .catch(() => {});
       });
     }
   };
@@ -200,7 +271,6 @@ function EditorContainer() {
     code,
     cssCode,
     jquery,
-    customLibUrl,
     enabled,
     unlockRightClick,
     runAt,
@@ -243,7 +313,6 @@ function EditorContainer() {
     code,
     cssCode,
     jquery,
-    customLibUrl,
     enabled,
     unlockRightClick,
     runAt,
@@ -381,34 +450,21 @@ function EditorContainer() {
         </select>
       </div>
 
-      {/* External Library & CDN Options */}
+      {/* Bundled library presets */}
       <div className="option" style={{ marginBottom: "12px" }}>
         <div className="block-name">{t("libraryOption")}</div>
         <select
           value={jquery}
           onChange={(e) => setJquery(e.target.value)}
-          style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", marginBottom: "6px" }}
+          style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
         >
           <option value="none">{t("libNone")}</option>
           <option value="jquery3">{t("libJquery3")}</option>
-          <option value="jquery2">{t("libJquery2")}</option>
-          <option value="jquery1">{t("libJquery1")}</option>
           <option value="lodash">{t("libLodash")}</option>
           <option value="axios">{t("libAxios")}</option>
           <option value="dayjs">{t("libDayjs")}</option>
-          <option value="tailwind">{t("libTailwind")}</option>
-          <option value="custom">{t("libCustom")}</option>
         </select>
-
-        {jquery === "custom" && (
-          <input
-            type="text"
-            placeholder={t("customUrlPlaceholder")}
-            value={customLibUrl}
-            onChange={(e) => setCustomLibUrl(e.target.value)}
-            style={{ width: "100%", padding: "8px", boxSizing: "border-box", borderRadius: "4px", border: "1px solid #ccc" }}
-          />
-        )}
+        <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>{t("libraryBundledHint")}</div>
       </div>
 
       {/* Code Editor Tabs (JS / CSS) & Live CSS Toggle */}
@@ -449,7 +505,7 @@ function EditorContainer() {
             <input
               type="checkbox"
               checked={liveCss}
-              onChange={(e) => setLiveCss(e.target.checked)}
+              onChange={(e) => handleLiveCssToggle(e.target.checked)}
             />
             ⚡ {t("liveCssSync")}
           </label>
@@ -498,7 +554,7 @@ function EditorContainer() {
       </Suspense>
 
       <div style={{ marginTop: "12px" }}>
-        <SaveButton editorState={editorState} isNew={paramId === "new"} draftKey={paramId} />
+        <SaveButton editorState={editorState} draftKey={paramId} />
       </div>
     </div>
   );

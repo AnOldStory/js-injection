@@ -73,7 +73,7 @@ const server = createServer((_, res) => {
   res.end(DEMO_HTML);
 }).listen(DEMO_PORT);
 
-// ---- sample rules seeded into chrome.storage.sync --------------------------
+// ---- sample rules seeded into chrome.storage.local -------------------------
 const DEMO_CSS = `/* wider article + dark reading theme */
 body { background: #0f1420 !important; color: #dfe7f3 !important; }
 main { max-width: 980px; }
@@ -104,7 +104,6 @@ const RULES = {
     code: DEMO_JS,
     cssCode: DEMO_CSS,
     jquery: "none",
-    customLibUrl: "",
     enabled: true,
     unlockRightClick: false,
     runAt: "document_start",
@@ -116,7 +115,6 @@ const RULES = {
     code: "",
     cssCode: "",
     jquery: "none",
-    customLibUrl: "",
     enabled: true,
     unlockRightClick: true,
     runAt: "document_idle",
@@ -128,7 +126,6 @@ const RULES = {
     code: "setInterval(() => location.reload(), 60000);",
     cssCode: "",
     jquery: "jquery3",
-    customLibUrl: "",
     enabled: true,
     unlockRightClick: false,
     runAt: "document_end",
@@ -140,7 +137,6 @@ const RULES = {
     code: "",
     cssCode: ".promo, .newsletter-popup { display: none !important; }",
     jquery: "none",
-    customLibUrl: "",
     enabled: false,
     unlockRightClick: false,
     runAt: "document_start",
@@ -174,8 +170,8 @@ const shot = async (page, name, opts = {}) => {
 await sw.evaluate(
   ([rules, version]) =>
     new Promise((done) => {
-      chrome.storage.sync.clear(() =>
-        chrome.storage.sync.set(
+      chrome.storage.local.clear(() =>
+        chrome.storage.local.set(
           { version, __globalEnabled: true, __lang: "en", ...rules },
           done
         )

@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
   "author": "AnOldStory",
-  "version": "3.4.0",
+  "version": "3.5.0",
+  "minimum_chrome_version": "120",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "background": {
@@ -28,6 +29,17 @@
     "128": "icon128.png"
   },
   "options_page": "index.html",
-  "permissions": ["storage", "scripting", "offscreen", "tabs"],
-  "host_permissions": ["<all_urls>", "ws://localhost/*", "http://localhost/*"]
+  "permissions": ["storage", "scripting", "offscreen", "tabs", "userScripts"],
+  "host_permissions": [
+    "<all_urls>",
+    "ws://localhost/*",
+    "wss://localhost/*",
+    "http://localhost/*",
+    "ws://127.0.0.1/*",
+    "wss://127.0.0.1/*",
+    "http://127.0.0.1/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*"
+  }
 }

@@ -1,11 +1,12 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback } from "react";
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 
 import Config from "_variables";
 
 import { useDispatch, useSelector } from "react-redux";
 import { set, setLang } from "store/modules/lists";
-import { detectLang, i18n } from "../i18n";
+import { migrateIfNeeded } from "shared/rule-store";
+import { i18n } from "../i18n";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCog, faGlobe, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
@@ -55,74 +56,19 @@ function AppRouter() {
   const dispatch = useDispatch();
   const lang = useSelector((state) => state.lists.lang);
 
-  const loadStorageRef = useRef(null);
-
-  const syncToStore = useCallback(
-    (items) => {
-      const { version: _, ...rest } = items || {};
-      dispatch(set(rest));
-    },
-    [dispatch]
-  );
-
-  /* v1/v2 규칙은 URL 문자열을 키로 쓰고 값에 url/nickname이 없다 */
-  const isLegacyRule = (value) =>
-    Array.isArray(value) || !(value && typeof value === "object" && "url" in value);
-
-  const updateDB = useCallback(() => {
-    chrome.storage.sync.get(null, (items) => {
-      const stored = items || {};
-      const prefs = {
-        version: Config.version,
-        __globalEnabled: stored.__globalEnabled !== false,
-        __lang: stored.__lang || detectLang(),
-      };
-      const rules = Object.entries(stored).filter(
-        ([id]) => id !== "version" && !id.startsWith("__")
-      );
-
-      /* 이미 현재 포맷이면 버전만 갱신한다 — 규칙을 건드리면 안 된다 */
-      if (!rules.some(([, value]) => isLegacyRule(value))) {
-        chrome.storage.sync.set(prefs, () => loadStorageRef.current?.());
-        return;
-      }
-
-      /* v1/v2 업데이트 호환: 옛 포맷만 현재 포맷으로 옮긴다 */
-      chrome.storage.sync.clear(() => {
-        chrome.storage.sync.set(prefs, () => {
-          rules.forEach(([id, value], i) => {
-            chrome.storage.sync.set({
-              [i]: isLegacyRule(value)
-                ? {
-                    nickname: decodeURIComponent(id),
-                    url: decodeURIComponent(id),
-                    code: Array.isArray(value) ? value[0] : value.code || "",
-                    jquery: "jquery3",
-                    enabled: true,
-                    runAt: "document_start",
-                    cssCode: "",
-                    tags: "",
-                  }
-                : value,
-            });
-          });
-          loadStorageRef.current?.();
-        });
-      });
-    });
-  }, []);
-
-  const loadStorage = useCallback(() => {
-    chrome.storage.sync.get(null, (result) => {
-      if (result?.version !== Config.version) {
-        updateDB();
-      } else {
-        syncToStore(result);
-      }
-    });
-  }, [updateDB, syncToStore]);
-
-  loadStorageRef.current = loadStorage;
+  /*
+   * Migration is additive and idempotent: it normalises legacy rules and moves
+   * old `storage.sync` data into `storage.local` once.  It never clears the
+   * rule set when the stored version differs.
+   */
+  const loadStorage = useCallback(async () => {
+    try {
+      const { rules, prefs } = await migrateIfNeeded(Config.version);
+      dispatch(set({ ...rules, ...prefs }));
+    } catch (error) {
+      console.error("[Js-Injection] storage load failed:", error);
+    }
+  }, [dispatch]);
 
   const handleOption = () => {
     window.open(chrome.runtime.getURL("index.html"));
@@ -132,19 +78,26 @@ function AppRouter() {
     e.preventDefault();
     e.stopPropagation();
     const nextLang = lang === "ko" ? "en" : "ko";
-    chrome.storage.sync.set({ __lang: nextLang }, () => {
+    chrome.storage.local.set({ __lang: nextLang }, () => {
+      void chrome.runtime.lastError;
       dispatch(setLang(nextLang));
     });
   };
 
-  /* REALTIME SYNC across Popup, SidePanel, Options Page */
+  /* REALTIME SYNC across Popup, Side Panel, Options Page */
   useEffect(() => {
     loadStorage();
 
     const handleStorageChange = (changes, areaName) => {
-      if (areaName === "sync") {
-        loadStorage();
-      }
+      if (areaName !== "local") return;
+      /* 편집 중 초안은 250ms 마다 저장된다 — 그때마다 전체 규칙을 다시 읽고
+         비교하면 큰 규칙을 편집할 때 화면이 버벅인다. 초안/감사로그만 바뀐
+         경우는 무시한다. */
+      const keys = Object.keys(changes || {});
+      const onlyNoise = keys.every(
+        (key) => key.startsWith("__draft_") || key === "__mcpAudit"
+      );
+      if (!onlyNoise) loadStorage();
     };
 
     chrome.storage.onChanged.addListener(handleStorageChange);

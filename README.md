@@ -26,20 +26,23 @@
 
 **Js-Injection** is a powerful Chrome / Naver Whale extension that automatically injects JavaScript and CSS styles into any website. It also acts as an **AI Model Context Protocol (MCP) Bridge**, allowing Claude Desktop, Antigravity, or Cursor AI agents to automate your browser and manage injection rules via AI prompts.
 
+> Requires Chrome/Whale 120 or newer. Rules are stored in `chrome.storage.local` on this device only — they are never uploaded to a Google account or any server.
+
 ---
 
 ## 🚀 Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 **MCP Protocol Bridge** | Connects to Claude Desktop / IDE AI agents via WebSocket for browser automation |
+| 🤖 **MCP Protocol Bridge** | Loopback-only WebSocket bridge with a pairing token; write/run-script access is off until you allow it |
 | 🔘 **Master Switch & Toggles** | One-click global disable/enable + per-rule toggle controls |
-| ⚡ **Live CSS Sync** | Real-time 0.1s CSS live reload on active tabs without page refresh |
-| 🔓 **Unlock Right Click** | Bypasses contextmenu / copy / selection restrictions automatically or via 1-Click button |
+| ⚡ **Live CSS Sync** | Debounced CSS preview on the active tab, only when the rule's URL pattern matches |
+| 🔓 **Unlock Right Click** | Removes context-menu / selection / drag blocking without breaking typing or paste |
 | 🌐 **i18n Multi-Language** | Full Korean (한국어) and English support with instant toggle |
-| 📚 **CDN Library Presets** | One-click injection of jQuery (3.x/2.x/1.x), Lodash, Axios, Day.js, Tailwind CSS |
+| 📚 **Bundled Library Presets** | jQuery 3.7, Lodash, Axios and Day.js ship inside the extension — no CDN requests |
 | 🖥️ **Options Dashboard** | Wide 1280px responsive dashboard layout for easy management |
 | 🔄 **3-Way Realtime Sync** | Automatic instant sync across Popup, Side Panel, and Options Page |
+| 🔐 **Validated Backups** | Strict JSON import validation; MCP tokens and consent flags are never exported |
 
 ---
 
@@ -63,6 +66,17 @@ Or run directly from local repository:
 node /path/to/Js-Injection/mcp-server.js
 ```
 
+### Pairing the extension
+
+1. Start `js-injection-mcp` once. It creates `~/.js-injection-mcp-token` (mode `0600`) and prints the path, never the token itself.
+2. Open **Settings → MCP Bridge**, paste the file's contents into the token field, and click **Connect**.
+3. Leave the access switches off unless you want the AI agent to change rules or execute code:
+   - **Allow rule changes** — `add_rule` / `delete_rule`
+   - **Allow one-off code execution** — `run_script_on_active_tab`
+   - **Allow exposing stored code** — include JS/CSS bodies in `list_rules`
+
+The server binds `127.0.0.1` only, rejects non-extension browser origins, requires a constant-time token check, and keeps a single active extension socket. A token can also be supplied through `JS_INJECTION_MCP_TOKEN` (set `JS_INJECTION_MCP_TOKEN_FILE` to use another path).
+
 ---
 
 ## 📜 Version History (변경 이력)
@@ -76,9 +90,11 @@ node /path/to/Js-Injection/mcp-server.js
 
 ```bash
 # Install dependencies
-npm install
+npm ci --legacy-peer-deps
 
-# Build extension
+# Lint + unit tests + build
+npm run lint
+npm test
 npm run build
 ```
 

@@ -27,6 +27,15 @@ const TARGETS = [
     find: /("version"\s*:\s*")(\d+\.\d+\.\d+)(")/,
   },
   {
+    /* npm keeps the package version in two places inside the lockfile. */
+    file: "package-lock.json",
+    find: /("version":\s*")(\d+\.\d+\.\d+)(",\s*\n\s*"lockfileVersion")/,
+  },
+  {
+    file: "package-lock.json",
+    find: /("":\s*\{\s*\n\s*"name":\s*"js-injection-mcp",\s*\n\s*"version":\s*")(\d+\.\d+\.\d+)(")/,
+  },
+  {
     file: "public/manifest.json",
     find: /("version"\s*:\s*")(\d+\.\d+\.\d+)(")/,
   },

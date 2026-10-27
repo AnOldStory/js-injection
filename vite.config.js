@@ -18,7 +18,20 @@ export default defineConfig({
         const distDir = path.resolve(__dirname, "dist");
         if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
 
-        const files = ["background.js", "injection.js", "icon128.png", "manifest.json", "offscreen.html", "offscreen.js"];
+        const files = [
+          "background.js",
+          "injection.js",
+          "icon128.png",
+          "manifest.json",
+          "offscreen.html",
+          "offscreen.js",
+          "url-match.js",
+          "rule-store.js",
+          "libraries.js",
+          "mcp-url.js",
+          "execute.js",
+          "unlock-page.js",
+        ];
         files.forEach((file) => {
           const src = path.resolve(__dirname, "public", file);
           const dest = path.resolve(distDir, file);
@@ -50,6 +63,13 @@ export default defineConfig({
           copyDir(localesSrc, path.resolve(distDir, "_locales"));
           console.log("[copy-extension-files] Copied _locales directory");
         }
+
+        /* Bundled libraries injected with chrome.scripting.executeScript. */
+        const vendorSrc = path.resolve(__dirname, "public", "vendor");
+        if (existsSync(vendorSrc)) {
+          copyDir(vendorSrc, path.resolve(distDir, "vendor"));
+          console.log("[copy-extension-files] Copied vendor directory");
+        }
       },
     },
   ],
@@ -61,6 +81,9 @@ export default defineConfig({
       store: path.resolve(__dirname, "src/store"),
       container: path.resolve(__dirname, "src/container"),
       component: path.resolve(__dirname, "src/component"),
+      /* Extension-owned runtime modules shared with the UI (no duplicated
+         URL matching / storage validation in the React bundle). */
+      shared: path.resolve(__dirname, "public"),
     },
   },
 

@@ -5,7 +5,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { useStorage } from "store/useStorage";
 import { clearAllDrafts } from "store/session";
 import { setGlobalEnabled } from "store/modules/lists";
-import { UNLOCK_RIGHT_CLICK_SCRIPT } from "../../unlockRightClick";
+import { buildBackup, isRuleKey, parseBackup, replaceAll } from "shared/rule-store";
+import { isInjectableUrl, matchesRule } from "shared/url-match";
+import { DEFAULT_MCP_URL, normalizeLoopbackUrl } from "shared/mcp-url";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -25,23 +27,20 @@ import {
   faPlug,
   faCopy,
   faInfoCircle,
+  faKey,
 } from "@fortawesome/free-solid-svg-icons";
 import UrlLink from "component/UrlLink";
 
 import "./MainContainer.scss";
 
-function glob(pattern, input) {
-  try {
-    const re = new RegExp(
-      decodeURIComponent(
-        pattern.replace(/([.?+^$[\]\\(){}|/-])/g, "\\$1").replace(/\*/g, ".*")
-      )
-    );
-    return re.test(input);
-  } catch {
-    return false;
-  }
-}
+const MCP_PREF_KEYS = [
+  "__mcpEnabled",
+  "__mcpUrl",
+  "__mcpToken",
+  "__mcpAllowWrite",
+  "__mcpAllowRunScript",
+  "__mcpExposeCode",
+];
 
 function MainContainer() {
   const storageList = useSelector((state) => state.lists.all);
@@ -53,47 +52,115 @@ function MainContainer() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTabUrl, setCurrentTabUrl] = useState("");
 
-  // MCP State
+  // MCP state
   const [mcpEnabled, setMcpEnabled] = useState(false);
-  const [mcpUrl, setMcpUrl] = useState("ws://localhost:3000/mcp");
+  const [mcpUrl, setMcpUrl] = useState(DEFAULT_MCP_URL);
+  const [mcpToken, setMcpToken] = useState("");
+  const [mcpAllowWrite, setMcpAllowWrite] = useState(false);
+  const [mcpAllowRunScript, setMcpAllowRunScript] = useState(false);
+  const [mcpExposeCode, setMcpExposeCode] = useState(false);
   const [mcpConnected, setMcpConnected] = useState(false);
   const [showMcpGuide, setShowMcpGuide] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   // Determine if running in Options Page vs Popup/Sidebar
   const isOptionsPage = !window.location.href.includes("popup") && window.innerWidth > 650;
 
   useEffect(() => {
-    chrome.storage.sync.get(["__mcpEnabled", "__mcpUrl"], (items) => {
-      setMcpEnabled(!!items.__mcpEnabled);
-      if (items.__mcpUrl) setMcpUrl(items.__mcpUrl);
+    chrome.storage.local.get(MCP_PREF_KEYS, (items) => {
+      void chrome.runtime.lastError;
+      setMcpEnabled(items?.__mcpEnabled === true);
+      setMcpUrl(normalizeLoopbackUrl(items?.__mcpUrl || "") || DEFAULT_MCP_URL);
+      setMcpToken(typeof items?.__mcpToken === "string" ? items.__mcpToken : "");
+      setMcpAllowWrite(items?.__mcpAllowWrite === true);
+      setMcpAllowRunScript(items?.__mcpAllowRunScript === true);
+      setMcpExposeCode(items?.__mcpExposeCode === true);
     });
 
     if (chrome.tabs?.query) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs?.[0]?.url) {
-          setCurrentTabUrl(tabs[0].url);
-        }
+        if (tabs?.[0]?.url) setCurrentTabUrl(tabs[0].url);
       });
     }
 
     const messageListener = (msg) => {
-      if (msg.type === "MCP_STATUS_CHANGE") {
-        setMcpConnected(msg.connected);
+      if (msg?.type === "MCP_STATUS_CHANGE") {
+        setMcpConnected(!!msg.connected);
       }
     };
     chrome.runtime.onMessage.addListener(messageListener);
+
+    /* The offscreen document may already be connected when the popup opens,
+       so ask it directly instead of waiting for the next status event. */
+    chrome.runtime.sendMessage({ type: "MCP_GET_STATUS" }, (status) => {
+      void chrome.runtime.lastError;
+      if (status) setMcpConnected(!!status.connected);
+    });
+
     return () => chrome.runtime.onMessage.removeListener(messageListener);
   }, []);
 
+  const handleMcpUrlBlur = () => {
+    const normalized = normalizeLoopbackUrl(mcpUrl);
+    if (normalized) {
+      setMcpUrl(normalized);
+      if (err === t("mcpInvalidUrl")) setErr("");
+    } else {
+      setErr(t("mcpInvalidUrl"));
+    }
+  };
+
+  const handleGenerateToken = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    const token = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    setMcpToken(token);
+    setErr("");
+  };
+
+  const handleCopyToken = async () => {
+    if (!mcpToken) return;
+    try {
+      await navigator.clipboard.writeText(mcpToken);
+      alert(t("mcpTokenCopied"));
+    } catch {
+      setErr(t("mcpTokenCopyFailed"));
+    }
+  };
+
   const handleToggleMcp = () => {
+    const normalized = normalizeLoopbackUrl(mcpUrl);
+    if (!normalized) {
+      setErr(t("mcpInvalidUrl"));
+      return;
+    }
+
+    const token = mcpToken.trim();
+    if (!token) {
+      setErr(t("mcpTokenRequired"));
+      return;
+    }
+
     const nextState = !mcpEnabled;
-    setMcpEnabled(nextState);
-    chrome.storage.sync.set({ __mcpEnabled: nextState, __mcpUrl: mcpUrl }, () => {
-      chrome.runtime.sendMessage({
-        type: nextState ? "CONNECT_MCP" : "DISCONNECT_MCP",
-        url: mcpUrl,
-      });
-    });
+    setErr("");
+    setBusy(true);
+
+    chrome.storage.local.set(
+      { __mcpUrl: normalized, __mcpToken: token, __mcpEnabled: nextState },
+      () => {
+        void chrome.runtime.lastError;
+        setMcpUrl(normalized);
+        setMcpEnabled(nextState);
+        setBusy(false);
+        if (!nextState) setMcpConnected(false);
+      }
+    );
+  };
+
+  const handleConsentChange = (key, value) => {
+    if (key === "__mcpAllowWrite") setMcpAllowWrite(value);
+    if (key === "__mcpAllowRunScript") setMcpAllowRunScript(value);
+    if (key === "__mcpExposeCode") setMcpExposeCode(value);
+    chrome.storage.local.set({ [key]: value }, () => void chrome.runtime.lastError);
   };
 
   const mcpConfigSnippet = JSON.stringify(
@@ -110,95 +177,114 @@ function MainContainer() {
   );
 
   const handleCopyMcpConfig = () => {
-    navigator.clipboard.writeText(mcpConfigSnippet).then(() => {
-      alert(t("mcpCopySuccess"));
-    });
+    navigator.clipboard
+      .writeText(mcpConfigSnippet)
+      .then(() => alert(t("mcpCopySuccess")))
+      .catch(() => setErr(t("mcpTokenCopyFailed")));
   };
 
   const handleToggleGlobal = () => {
     const nextState = !globalEnabled;
-    chrome.storage.sync.set({ __globalEnabled: nextState }, () => {
+    chrome.storage.local.set({ __globalEnabled: nextState }, () => {
+      void chrome.runtime.lastError;
       dispatch(setGlobalEnabled(nextState));
     });
   };
 
-  const handleQuickUnlock = () => {
-    if (chrome.tabs?.query) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs?.[0]?.id) return;
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id, allFrames: true },
-          world: "MAIN",
-          func: (code) => {
-            // MAIN world에서 사용자가 저장한 코드를 그대로 실행한다
-            eval(code);
-          },
-          args: [UNLOCK_RIGHT_CLICK_SCRIPT],
-        }).then(() => {
-          alert(t("enableContextMenuSuccess"));
-        }).catch(() => {});
+  const handleQuickUnlock = async () => {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs?.[0];
+      if (!tab?.id || !isInjectableUrl(tab.url || "")) {
+        alert(t("quickUnlockNoTab"));
+        return;
+      }
+
+      /* Bundled file, MAIN world — no eval and no remote code. */
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        world: "MAIN",
+        files: ["unlock-page.js"],
+        injectImmediately: true,
       });
+      alert(t("enableContextMenuSuccess"));
+    } catch (error) {
+      alert(`${t("quickUnlockFailed")}\n${error?.message || error}`);
     }
   };
 
-  const handleClear = () => {
-    if (window.confirm(t("confirmDeleteAll"))) {
-      chrome.storage.sync.clear(() => {
-        clearAllDrafts();
-        chrome.storage.sync.set({ version: Config.version, __globalEnabled: true }, () => {
-          loadStorage();
-        });
-      });
-    }
-  };
+  const handleClear = async () => {
+    if (!window.confirm(t("confirmDeleteAll"))) return;
 
-  const handleWarning = () => {
-    alert(t("backupWarning"));
-  };
-
-  const saveItem = (id, item) => {
-    chrome.storage.sync.set({ [id]: item }, () => {
+    try {
+      /* Replace writes the empty rule set first, then drops the old keys —
+         a failed write can never leave the user with no rules at all. */
+      await replaceAll({}, { version: Config.version, __globalEnabled: true });
+      clearAllDrafts();
       loadStorage();
+      setErr("");
+    } catch (error) {
+      setErr(`${t("saveFailed")} (${error?.message || error})`);
+    }
+  };
+
+  const handleExport = () => {
+    chrome.storage.local.get(["__globalEnabled", "__lang"], (items) => {
+      void chrome.runtime.lastError;
+      const json = buildBackup(storageList, items || {});
+      const blob = new Blob([json], { type: "application/json" });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `js-injection-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     });
   };
 
   const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    /* chrome.storage.local is 10 MB; anything larger cannot be imported and
+       would only freeze the popup while FileReader buffers it. */
+    if (file.size > 12 * 1024 * 1024) {
+      setErr(t("backupTooLarge"));
+      return;
+    }
+    if (!window.confirm(t("backupWarning"))) return;
+
     const fileReader = new FileReader();
-    fileReader.onload = () => {
-      if (validate(fileReader.result)) {
-        const result = JSON.parse(fileReader.result);
+    fileReader.onload = async () => {
+      /* Validate the *whole* file before touching storage. */
+      const parsed = parseBackup(String(fileReader.result || ""));
+      if (!parsed.ok) {
+        setErr(`${t("invalidFile")} (${parsed.error})`);
+        return;
+      }
+
+      try {
+        await replaceAll(parsed.rules, { ...parsed.prefs, version: Config.version });
         clearAllDrafts();
-        chrome.storage.sync.clear(() => {
-          chrome.storage.sync.set({ version: Config.version, __globalEnabled: true }, () => {
-            for (let key in result) {
-              if (key !== "version" && !key.startsWith("__")) {
-                saveItem(key, result[key]);
-              }
-            }
-            setErr("");
-          });
-        });
-      } else {
-        setErr(t("invalidFile"));
+        setErr("");
+        loadStorage();
+        alert(t("importSuccess"));
+      } catch (error) {
+        setErr(`${t("invalidFile")} (${error?.message || error})`);
       }
     };
-    fileReader.readAsText(e.target.files[0]);
+    fileReader.onerror = () => setErr(t("invalidFile"));
+    fileReader.readAsText(file);
   };
 
-  const validate = (obj) => {
-    try {
-      const result = JSON.parse(obj);
-      return typeof result === "object" && result !== null;
-    } catch {
-      return false;
-    }
+  const matchesCurrentTab = (item) => {
+    if (!currentTabUrl || !item?.url) return false;
+    return matchesRule(item.url, currentTabUrl);
   };
-
-  const matchesCurrentTab = (item) => !!currentTabUrl && glob(item.url || "", currentTabUrl);
 
   // Filter rules by search query
   const filteredList = Object.entries(storageList).filter(([key, item]) => {
-    if (key === "version" || key.startsWith("__")) return false;
+    if (!isRuleKey(key)) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     const nicknameMatch = (item.nickname || "").toLowerCase().includes(q);
@@ -207,19 +293,49 @@ function MainContainer() {
     return nicknameMatch || urlMatch || tagMatch;
   });
 
-  const totalRulesCount = Object.keys(storageList).filter((k) => k !== "version" && !k.startsWith("__")).length;
-  const activeRulesCount = Object.entries(storageList).filter(([k, v]) => k !== "version" && !k.startsWith("__") && v.enabled !== false).length;
+  const ruleEntries = Object.entries(storageList).filter(([key]) => isRuleKey(key));
+  const totalRulesCount = ruleEntries.length;
+  const activeRulesCount = ruleEntries.filter(([, value]) => value.enabled !== false).length;
 
   // Calculate active tab matching count
-  const matchingActiveCount = Object.entries(storageList).filter(([key, item]) => {
-    if (key === "version" || key.startsWith("__")) return false;
-    return item.enabled !== false && matchesCurrentTab(item);
-  }).length;
+  const matchingActiveCount = ruleEntries.filter(
+    ([, item]) => item.enabled !== false && matchesCurrentTab(item)
+  ).length;
 
   /* 규칙이 많아지면 지금 보고 있는 페이지에 걸리는 규칙부터 찾게 된다 — 위로 올린다 */
   const matchedList = filteredList.filter(([, item]) => matchesCurrentTab(item));
   const otherList = filteredList.filter(([, item]) => !matchesCurrentTab(item));
   const grouped = matchedList.length > 0 && otherList.length > 0;
+
+  const consentRow = (checked, onChange, title, description, warning) => (
+    <label
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "6px",
+        fontSize: "11px",
+        lineHeight: "1.35",
+        color: warning ? "#92400e" : "#334155",
+        background: warning ? "#fffbeb" : "transparent",
+        border: warning ? "1px solid #fde68a" : "1px solid transparent",
+        borderRadius: "4px",
+        padding: warning ? "6px" : "0",
+        cursor: "pointer",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ marginTop: "2px" }}
+      />
+      <span>
+        <strong>{title}</strong>
+        <br />
+        {description}
+      </span>
+    </label>
+  );
 
   const mainListUI = (
     <>
@@ -404,11 +520,67 @@ function MainContainer() {
                   type="text"
                   value={mcpUrl}
                   onChange={(e) => setMcpUrl(e.target.value)}
+                  onBlur={handleMcpUrlBlur}
                   placeholder={t("mcpServerUrl")}
+                  spellCheck={false}
                   style={{ padding: "6px 8px", borderRadius: "4px", border: "1px solid #a7f3d0", fontSize: "12px" }}
                 />
+
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <input
+                    type="text"
+                    value={mcpToken}
+                    onChange={(e) => setMcpToken(e.target.value.trim())}
+                    placeholder={t("mcpTokenPlaceholder")}
+                    spellCheck={false}
+                    autoComplete="off"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "6px 8px",
+                      borderRadius: "4px",
+                      border: "1px solid #a7f3d0",
+                      fontSize: "11px",
+                      fontFamily: "monospace",
+                    }}
+                  />
+                  <button
+                    onClick={handleGenerateToken}
+                    title={t("mcpTokenGenerate")}
+                    style={{
+                      padding: "4px 8px",
+                      background: "#0ea5e9",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faKey} /> {t("mcpTokenGenerate")}
+                  </button>
+                  <button
+                    onClick={handleCopyToken}
+                    disabled={!mcpToken}
+                    title={t("mcpTokenCopy")}
+                    style={{
+                      padding: "4px 8px",
+                      background: mcpToken ? "#64748b" : "#cbd5e1",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      fontSize: "11px",
+                      cursor: mcpToken ? "pointer" : "default",
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faCopy} />
+                  </button>
+                </div>
+                <div style={{ fontSize: "10px", color: "#166534", lineHeight: "1.4" }}>{t("mcpTokenHelp")}</div>
+
                 <button
                   onClick={handleToggleMcp}
+                  disabled={busy}
                   style={{
                     padding: "8px",
                     background: mcpEnabled ? "#dc2626" : "#16a34a",
@@ -417,13 +589,38 @@ function MainContainer() {
                     borderRadius: "4px",
                     fontWeight: "bold",
                     fontSize: "12px",
-                    cursor: "pointer",
+                    cursor: busy ? "wait" : "pointer",
                   }}
                 >
                   <FontAwesomeIcon icon={faPlug} /> {mcpEnabled ? t("mcpDisconnectBtn") : t("mcpConnectBtn")}
                 </button>
                 <div style={{ fontSize: "11px", fontWeight: "bold", color: mcpConnected ? "#15803d" : "#6b7280", marginTop: "2px" }}>
                   {mcpConnected ? t("mcpStatusConnected") : t("mcpStatusDisconnected")}
+                </div>
+
+                <div style={{ borderTop: "1px dashed #bbf7d0", marginTop: "4px", paddingTop: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "bold", color: "#92400e" }}>{t("mcpConsentTitle")}</div>
+                  {consentRow(
+                    mcpAllowWrite,
+                    (value) => handleConsentChange("__mcpAllowWrite", value),
+                    t("mcpAllowWrite"),
+                    t("mcpAllowWriteDesc"),
+                    true
+                  )}
+                  {consentRow(
+                    mcpAllowRunScript,
+                    (value) => handleConsentChange("__mcpAllowRunScript", value),
+                    t("mcpAllowRunScript"),
+                    t("mcpAllowRunScriptDesc"),
+                    true
+                  )}
+                  {consentRow(
+                    mcpExposeCode,
+                    (value) => handleConsentChange("__mcpExposeCode", value),
+                    t("mcpExposeCode"),
+                    t("mcpExposeCodeDesc"),
+                    false
+                  )}
                 </div>
               </div>
 
@@ -434,6 +631,11 @@ function MainContainer() {
                   <div style={{ marginBottom: "4px", color: "#555" }}>{t("mcpGuideStep1")}</div>
                   <code style={{ display: "block", background: "#f3f4f6", padding: "4px 6px", borderRadius: "4px", fontSize: "11px", wordBreak: "break-all", marginBottom: "8px" }}>
                     npx -y js-injection-mcp
+                  </code>
+
+                  <div style={{ marginBottom: "4px", color: "#555" }}>{t("mcpGuideStepToken")}</div>
+                  <code style={{ display: "block", background: "#f3f4f6", padding: "4px 6px", borderRadius: "4px", fontSize: "11px", wordBreak: "break-all", marginBottom: "8px" }}>
+                    ~/.js-injection-mcp-token
                   </code>
 
                   <div style={{ marginBottom: "4px", color: "#555" }}>{t("mcpGuideStep2")}</div>
@@ -496,10 +698,8 @@ function MainContainer() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <a
-                  href={"data:text/json," + encodeURIComponent(JSON.stringify(storageList))}
-                  className="btn"
-                  download="js-injection-backup.json"
+                <button
+                  onClick={handleExport}
                   style={{
                     display: "block",
                     padding: "8px",
@@ -509,17 +709,18 @@ function MainContainer() {
                     borderRadius: "4px",
                     fontWeight: "bold",
                     fontSize: "12px",
-                    textDecoration: "none",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                 >
                   <FontAwesomeIcon icon={faDownload} /> {t("backupDownload")}
-                </a>
+                </button>
 
                 <div className="upload" style={{ width: "100%" }}>
                   <div className="btn" style={{ padding: "8px", background: "#4CAF50", color: "#fff", textAlign: "center", borderRadius: "4px", fontWeight: "bold", fontSize: "12px" }}>
                     <FontAwesomeIcon icon={faUpload} /> {t("backupUpload")}
                   </div>
-                  <input type="file" className="file btn" onClick={handleWarning} onChange={handleUpload} />
+                  <input type="file" accept="application/json,.json" className="file btn" onChange={handleUpload} />
                 </div>
 
                 <button

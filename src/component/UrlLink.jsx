@@ -1,70 +1,85 @@
 import { Link } from "react-router-dom";
 import DeleteButton from "component/DeleteButton";
 import { useStorage } from "store/useStorage";
+import { saveRule } from "shared/rule-store";
+import { executeUserCode } from "shared/execute";
+import { isInjectableUrl, matchesRule } from "shared/url-match";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faToggleOn, faToggleOff, faTag, faUnlock } from "@fortawesome/free-solid-svg-icons";
 
-function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, cssCode, jquery, customLibUrl, runAt, matched }) {
+function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, cssCode, jquery, runAt, matched }) {
   const { loadStorage, t } = useStorage();
   const isEnabled = enabled !== false;
 
-  const handleToggle = (e) => {
+  const handleToggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    chrome.storage.sync.set(
-      {
-        [id]: {
-          nickname,
-          url,
-          code,
-          cssCode: cssCode || "",
-          jquery: jquery || "none",
-          customLibUrl: customLibUrl || "",
-          enabled: !isEnabled,
-          unlockRightClick: !!unlockRightClick,
-          runAt: runAt || "document_start",
-          tags: tags || "",
-        },
-      },
-      () => loadStorage()
-    );
+
+    try {
+      await saveRule(id, {
+        nickname,
+        url,
+        code,
+        cssCode: cssCode || "",
+        jquery: jquery || "none",
+        enabled: !isEnabled,
+        unlockRightClick: !!unlockRightClick,
+        runAt: runAt || "document_start",
+        tags: tags || "",
+      });
+      loadStorage();
+    } catch (error) {
+      alert(`${t("saveFailed")}\n${error?.message || error}`);
+    }
   };
 
-  const handleRunNow = (e) => {
+  const handleRunNow = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs?.[0]?.id) return;
-      const tabId = tabs[0].id;
-      
-      // Inject CSS if present
+
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs?.[0];
+      if (!tab?.id || !isInjectableUrl(tab.url || "")) {
+        alert(t("runNowFail"));
+        return;
+      }
+
+      /* Run Now is a manual shortcut for *this* rule, so it must respect the
+         rule's own URL scope.  Only the top-level document is targeted:
+         `allFrames` would also run the code inside cross-origin iframes whose
+         URL never matched the rule. */
+      if (!matchesRule(url, tab.url || "")) {
+        alert(t("runNowNotMatched"));
+        return;
+      }
+
       if (cssCode) {
-        chrome.scripting.insertCSS({
-          target: { tabId },
-          css: cssCode,
-        }).catch(() => {});
+        await chrome.scripting
+          .insertCSS({ target: { tabId: tab.id, frameIds: [0] }, css: cssCode })
+          .catch(() => {});
       }
 
-      // Inject JS Code
       if (code) {
-        chrome.scripting.executeScript({
-          target: { tabId, allFrames: true },
-          world: "MAIN",
-          func: (userCode) => {
-            // MAIN world에서 사용자가 저장한 코드를 그대로 실행한다
-            eval(userCode);
-          },
-          args: [code],
-        }).then(() => {
-          alert(t("runNowSuccess"));
-        }).catch(() => {
-          alert(t("runNowFail"));
+        const result = await executeUserCode({
+          tabId: tab.id,
+          frameIds: [0],
+          code,
+          injectImmediately: true,
         });
+        if (!result.ok) {
+          alert(`${t("runNowFail")}\n${result.error || ""}`);
+          return;
+        }
       }
-    });
+
+      alert(t("runNowSuccess"));
+    } catch (error) {
+      alert(`${t("runNowFail")}\n${error?.message || error}`);
+    }
   };
 
-  const tagList = (tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const tagList = (tags || "").split(",").map((tag) => tag.trim()).filter(Boolean);
 
   return (
     <div
@@ -95,14 +110,14 @@ function UrlLink({ id, nickname, url, enabled, unlockRightClick, tags, code, css
 
       <Link className="list-link btn" to={String(id)} style={{ flex: 1, textDecoration: "none", opacity: isEnabled ? 1 : 0.6 }}>
         <div style={{ fontWeight: "bold", fontSize: "14px", color: "#333", display: "flex", alignItems: "center", gap: "6px" }}>
-          {nickname.length > 28 ? nickname.slice(0, 25) + "..." : nickname}
+          {(nickname || url || "").length > 28 ? (nickname || url).slice(0, 25) + "..." : nickname || url}
           {matched && (
             <span style={{ fontSize: "10px", background: "#e3f2fd", color: "#1565c0", padding: "1px 5px", borderRadius: "4px", whiteSpace: "nowrap" }} title={t("matchedBadgeTooltip")}>
               {t("matchedBadge")}
             </span>
           )}
           {unlockRightClick && (
-            <span style={{ fontSize: "10px", background: "#dcfce7", color: "#15803d", padding: "1px 5px", borderRadius: "4px" }} title="우클릭 해제 활성화됨">
+            <span style={{ fontSize: "10px", background: "#dcfce7", color: "#15803d", padding: "1px 5px", borderRadius: "4px" }} title={t("enableContextMenu")}>
               <FontAwesomeIcon icon={faUnlock} /> Unlock
             </span>
           )}
