@@ -44,6 +44,11 @@ test("file URLs work without an authority", () => {
   assert.equal(matchesRule("file:///*", "file:///home/user/page.html"), true);
   assert.equal(matchesRule("file:///home/*", "file:///home/user/page.html"), true);
   assert.equal(matchesRule("file:///home/*", "file:///tmp/page.html"), false);
+  /* A local-path rule must not run on a UNC/remote host and vice versa. */
+  assert.equal(matchesRule("file:///home/*", "file://server/home/page.html"), false);
+  assert.equal(matchesRule("file://server/home/*", "file://server/home/page.html"), true);
+  assert.equal(matchesRule("file://server/home/*", "file:///home/page.html"), false);
+  assert.equal(matchesRule("file://*/*", "file://server/home/page.html"), true);
 });
 
 test("query strings and fragments are part of the path match", () => {

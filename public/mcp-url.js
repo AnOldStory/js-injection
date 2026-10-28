@@ -8,6 +8,10 @@
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
+/* The server caps the pairing token at 4 KB; a larger value would only make
+   the WebSocket URL unusable. */
+export const MAX_MCP_TOKEN_LENGTH = 4096;
+
 export const DEFAULT_MCP_URL = "ws://127.0.0.1:3000/mcp";
 
 /**
@@ -32,6 +36,9 @@ export function normalizeLoopbackUrl(raw) {
   const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
   if (!LOOPBACK_HOSTS.has(host)) return null;
 
+  /* Port 0 is not dialable; the URL parser already rejects > 65535. */
+  if (url.port && Number(url.port) < 1) return null;
+
   /* A query string may carry a stale token; the caller appends the current one. */
   url.search = "";
   url.hash = "";
@@ -42,6 +49,7 @@ export function normalizeLoopbackUrl(raw) {
 export function withMcpToken(url, token) {
   const normalized = normalizeLoopbackUrl(url);
   if (!normalized) return null;
+  if (typeof token === "string" && token.length > MAX_MCP_TOKEN_LENGTH) return null;
   const parsed = new URL(normalized);
   if (typeof token === "string" && token) parsed.searchParams.set("token", token);
   return parsed.toString();

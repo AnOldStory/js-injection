@@ -7,7 +7,12 @@
  * state of a newer connection.
  */
 
-import { DEFAULT_MCP_URL, normalizeLoopbackUrl, withMcpToken } from "./mcp-url.js";
+import {
+  DEFAULT_MCP_URL,
+  MAX_MCP_TOKEN_LENGTH,
+  normalizeLoopbackUrl,
+  withMcpToken,
+} from "./mcp-url.js";
 
 const BASE_RECONNECT_MS = 1000;
 const MAX_RECONNECT_MS = 30000;
@@ -206,6 +211,12 @@ function connect(rawUrl, token) {
     teardown();
     postStatus(false, "MCP pairing token is required.");
     return { ok: false, error: "MCP pairing token is required" };
+  }
+  if (nextToken.length > MAX_MCP_TOKEN_LENGTH) {
+    desired = false;
+    teardown();
+    postStatus(false, "MCP pairing token is too long.");
+    return { ok: false, error: "MCP pairing token is too long" };
   }
   const key = `${normalized}\n${nextToken}`;
 

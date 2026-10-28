@@ -5,6 +5,7 @@ import { getLibraryFile } from "./libraries.js";
 import { executeUserCode } from "./execute.js";
 import {
   MAX_RULES,
+  MAX_RULE_BYTES,
   PREF_KEYS,
   appendAudit,
   deleteRule,
@@ -16,7 +17,7 @@ import {
   nextRuleId,
   saveRule,
 } from "./rule-store.js";
-import { DEFAULT_MCP_URL, normalizeLoopbackUrl } from "./mcp-url.js";
+import { DEFAULT_MCP_URL, MAX_MCP_TOKEN_LENGTH, normalizeLoopbackUrl } from "./mcp-url.js";
 
 let storageList = {};
 let prefs = { __globalEnabled: true };
@@ -92,6 +93,9 @@ async function connectMcp(overrides = {}) {
     /* Without a token the server rejects every upgrade with 401 and the
        offscreen document would retry forever.  Fail fast instead. */
     return { ok: false, error: "MCP pairing token is required" };
+  }
+  if (token.length > MAX_MCP_TOKEN_LENGTH) {
+    return { ok: false, error: "MCP pairing token is too long" };
   }
 
   try {
@@ -376,6 +380,11 @@ async function handleMcpCommand(payload) {
     }
     const code = asString(p.code);
     if (!code) return { error: "code is required." };
+    /* A runtime message is not size-checked anywhere else; cap it before it
+       reaches the page.  Count UTF-8 bytes, not UTF-16 code units. */
+    if (new TextEncoder().encode(code).length > MAX_RULE_BYTES) {
+      return { error: "code is too long." };
+    }
 
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     const tabId = tabs?.[0]?.id;

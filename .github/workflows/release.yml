@@ -41,6 +41,7 @@ jobs:
       # 태그와 package.json이 어긋나거나 README/manifest/mcp-server의 버전이
       # 밀려 있으면 스토어에 올라가기 전에 여기서 멈춘다.
       - name: Verify version
+        id: verify
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG="$(node -p "require('./package.json').version")"
@@ -52,14 +53,17 @@ jobs:
 
       # ── 5. 린트 ──────────────────────────────────────────────────
       - name: Lint
+        id: lint
         run: npm run lint
 
       # ── 6. 단위 테스트 ───────────────────────────────────────────
       - name: Test
+        id: test
         run: npm test
 
       # ── 7. 프로덕션 빌드 ─────────────────────────────────────────
       - name: Build
+        id: build
         run: npm run build
 
       # ── 8. dist/ 폴더를 zip으로 압축 ─────────────────────────────
@@ -106,8 +110,9 @@ jobs:
       # 이 리포와 release.yml을 Trusted Publisher로 등록해두면 된다.
       # 스토어와 npm은 서로 독립이다. 스토어 업로드는 이전 버전이 심사 중이면
       # ITEM_NOT_UPDATABLE로 거절되는데, 그렇다고 npm 배포까지 막을 이유는 없다.
+      # 단, 검증(버전/린트/테스트/빌드)이 모두 성공한 경우에만 배포한다.
       - name: Publish to npm
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.verify.outcome == 'success' && steps.lint.outcome == 'success' && steps.test.outcome == 'success' && steps.build.outcome == 'success' }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           if npm view "js-injection-mcp@$VERSION" version >/dev/null 2>&1; then

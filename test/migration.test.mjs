@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { migrateIfNeeded, replaceAll, appendAudit, saveRule, deleteRule, MAX_RULES, isNumericId } from "../public/rule-store.js";
+import { migrateIfNeeded, replaceAll, appendAudit, saveRule, deleteRule, MAX_RULES, MAX_RULE_BYTES, isNumericId } from "../public/rule-store.js";
 
 /**
  * Minimal in-memory chrome.storage.local / .sync up to the surface rule-store
@@ -185,6 +185,42 @@ test("audit entries are truncated so one failure cannot fill storage", async () 
   assert.equal(entry.url.length, 2048);
   assert.equal(entry.error.length, 500);
   assert.equal(entry.ok, false);
+});
+
+test("one invalid legacy rule cannot brick the whole migration", async () => {
+  const chrome = installFakeChrome({
+    version: "3.4.0",
+    "1": { url: "https://big.example/*", code: "x".repeat(MAX_RULE_BYTES + 10) },
+    "2": { url: "https://ok.example/*", code: "ok()" },
+  });
+
+  const { rules } = await migrateIfNeeded("3.5.0");
+
+  assert.deepEqual(Object.keys(rules), ["2"]);
+  assert.equal(rules["2"].code, "ok()");
+  /* The version must advance, otherwise every start retries and fails. */
+  assert.equal(chrome.__state.local.version, "3.5.0");
+  assert.equal(chrome.__state.local.__migratedFromSync, true);
+});
+
+test("migration keeps at most MAX_RULES rules", async () => {
+  const seed = { version: "3.4.0" };
+  for (let i = 1; i <= MAX_RULES + 5; i += 1) {
+    seed[String(i)] = { url: `https://r${i}.example/*`, code: "x()" };
+  }
+  const chrome = installFakeChrome(seed);
+
+  const { rules } = await migrateIfNeeded("3.5.0");
+  assert.equal(Object.keys(rules).length, MAX_RULES);
+  assert.equal(chrome.__state.local.version, "3.5.0");
+});
+
+test("audit entries cannot spoof their timestamp", async () => {
+  const chrome = installFakeChrome({});
+  await appendAudit({ action: "test", at: 1 });
+  const [entry] = chrome.__state.local.__mcpAudit;
+  assert.equal(entry.action, "test");
+  assert.ok(entry.at > 1, "appendAudit must overwrite a caller-supplied timestamp");
 });
 
 test("saveRule enforces the rule cap for new rules but still updates existing ones", async () => {

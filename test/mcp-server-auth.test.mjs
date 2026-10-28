@@ -163,6 +163,42 @@ test("a second socket replaces the first (single active socket)", async () => {
   second.ws.close();
 });
 
+test("a large list_rules response survives the bridge", async () => {
+  const ws = new WebSocket(url("/mcp", `token=${token}`), { origin: EXTENSION_ORIGIN });
+  await new Promise((resolve, reject) => {
+    ws.once("open", resolve);
+    ws.once("error", reject);
+  });
+
+  /* 3 MB is well under storage.local's 10 MB, so this is a legitimate
+     response when the user enables "Expose code".  A 2 MB socket limit used
+     to terminate the connection here. */
+  const big = "x".repeat(3 * 1024 * 1024);
+  ws.on("message", (data) => {
+    const message = JSON.parse(data.toString());
+    if (message?.id) {
+      ws.send(JSON.stringify({ id: message.id, result: { rules: { 1: { code: big } } } }));
+    }
+  });
+
+  try {
+    const reply = await rpc(
+      {
+        jsonrpc: "2.0",
+        id: "large-list",
+        method: "tools/call",
+        params: { name: "list_rules", arguments: {} },
+      },
+      8000
+    );
+    assert.equal(reply.result.isError, undefined);
+    const text = reply.result.content[0].text;
+    assert.ok(text.length > 3 * 1024 * 1024);
+  } finally {
+    ws.close();
+  }
+});
+
 test("initialize only echoes a protocol version the server implements", async () => {
   const unknown = await rpc({
     jsonrpc: "2.0",

@@ -95,7 +95,10 @@ function AppRouter() {
          경우는 무시한다. */
       const keys = Object.keys(changes || {});
       const onlyNoise = keys.every(
-        (key) => key.startsWith("__draft_") || key === "__mcpAudit"
+        (key) =>
+          key.startsWith("__draft_") ||
+          key === "__mcpAudit" ||
+          key === "__lastRoute"
       );
       if (!onlyNoise) loadStorage();
     };

@@ -33,6 +33,13 @@ const DEFAULT_PROTOCOL_VERSION = "2024-11-05";
 const REQUEST_TIMEOUT_MS = 15000;
 const HEARTBEAT_MS = 30000;
 const MAX_TOKEN_BYTES = 4096;
+/* One stdio JSON-RPC line.  Tool arguments are capped at 1 MB, so anything
+   larger is malformed or an attempt to make the server buffer garbage. */
+const MAX_REQUEST_BYTES = 4 * 1024 * 1024;
+/* Extension responses can be large: `list_rules` with "Expose code" enabled
+   returns every stored rule, and storage.local allows up to ~10 MB.  The old
+   2 MB limit killed the bridge on a legitimate response. */
+const MAX_SOCKET_PAYLOAD = 16 * 1024 * 1024;
 
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   console.error(
@@ -109,7 +116,15 @@ function createTokenFile() {
 
 function resolveToken() {
   const fromEnv = (process.env.JS_INJECTION_MCP_TOKEN || "").trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) {
+    if (fromEnv.length > MAX_TOKEN_BYTES) {
+      console.error(
+        `[Js-Injection MCP] JS_INJECTION_MCP_TOKEN is longer than ${MAX_TOKEN_BYTES} bytes.`
+      );
+      process.exit(1);
+    }
+    return fromEnv;
+  }
 
   const existing = readTokenFile();
   if (existing) return existing;
@@ -210,7 +225,7 @@ const wss = new WebSocketServer({
   port: PORT,
   path: WS_PATH,
   verifyClient,
-  maxPayload: 2 * 1024 * 1024,
+  maxPayload: MAX_SOCKET_PAYLOAD,
   perMessageDeflate: false,
 });
 
@@ -482,7 +497,9 @@ function validateToolArguments(name, args) {
     for (const key of ["code", "cssCode"]) {
       if (args[key] !== undefined) {
         if (typeof args[key] !== "string") throw new Error(`${key} must be a string`);
-        if (args[key].length > 1024 * 1024) throw new Error(`${key} is too long`);
+        if (Buffer.byteLength(args[key], "utf8") > 1024 * 1024) {
+          throw new Error(`${key} is too long`);
+        }
       }
     }
     for (const [key, max] of [["nickname", 256], ["tags", 1024]]) {
@@ -491,7 +508,12 @@ function validateToolArguments(name, args) {
         if (args[key].length > max) throw new Error(`${key} is too long`);
       }
     }
-    const id = args.id === undefined ? undefined : validateRuleId(args.id);
+    for (const key of ["enabled", "unlockRightClick"]) {
+      if (args[key] !== undefined && typeof args[key] !== "boolean") {
+        throw new Error(`${key} must be a boolean`);
+      }
+    }
+    const id = args.id === undefined || args.id === null ? undefined : validateRuleId(args.id);
     const runAt = args.runAt === undefined ? "document_start" : String(args.runAt);
     if (!["document_start", "document_end", "document_idle"].includes(runAt)) {
       throw new Error("runAt must be document_start, document_end or document_idle");
@@ -508,7 +530,11 @@ function validateToolArguments(name, args) {
   }
 
   if (name === "run_script_on_active_tab") {
-    return { code: requireString(args, "code") };
+    const code = requireString(args, "code");
+    if (Buffer.byteLength(code, "utf8") > 1024 * 1024) {
+      throw new Error("code is too long");
+    }
+    return { code };
   }
 
   throw new Error(`Unknown tool: ${name}`);
@@ -578,6 +604,10 @@ const rl = readline.createInterface({
 
 rl.on("line", (line) => {
   if (!line.trim()) return;
+  if (Buffer.byteLength(line, "utf8") > MAX_REQUEST_BYTES) {
+    error(null, -32700, "Request too large");
+    return;
+  }
 
   let request;
   try {

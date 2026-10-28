@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,12 +35,13 @@ export default defineConfig({
         files.forEach((file) => {
           const src = path.resolve(__dirname, "public", file);
           const dest = path.resolve(distDir, file);
-          if (existsSync(src)) {
-            copyFileSync(src, dest);
-            console.log(`[copy-extension-files] Copied ${file}`);
-          } else {
-            console.warn(`[copy-extension-files] Source not found: ${file}`);
+          if (!existsSync(src)) {
+            /* A missing runtime file means dist/ is not a loadable extension.
+               Fail the build instead of shipping a silently broken zip. */
+            throw new Error(`[copy-extension-files] Missing runtime file: public/${file}`);
           }
+          copyFileSync(src, dest);
+          console.log(`[copy-extension-files] Copied ${file}`);
         });
 
         // Copy _locales directory recursively
@@ -59,16 +60,55 @@ export default defineConfig({
         };
 
         const localesSrc = path.resolve(__dirname, "public", "_locales");
-        if (existsSync(localesSrc)) {
-          copyDir(localesSrc, path.resolve(distDir, "_locales"));
-          console.log("[copy-extension-files] Copied _locales directory");
+        if (!existsSync(localesSrc)) {
+          throw new Error("[copy-extension-files] Missing public/_locales directory");
         }
+        copyDir(localesSrc, path.resolve(distDir, "_locales"));
+        console.log("[copy-extension-files] Copied _locales directory");
 
         /* Bundled libraries injected with chrome.scripting.executeScript. */
         const vendorSrc = path.resolve(__dirname, "public", "vendor");
-        if (existsSync(vendorSrc)) {
-          copyDir(vendorSrc, path.resolve(distDir, "vendor"));
-          console.log("[copy-extension-files] Copied vendor directory");
+        if (!existsSync(vendorSrc)) {
+          throw new Error("[copy-extension-files] Missing public/vendor directory");
+        }
+        copyDir(vendorSrc, path.resolve(distDir, "vendor"));
+        console.log("[copy-extension-files] Copied vendor directory");
+
+        /* The manifest is the source of truth for what Chrome loads.  Verify
+           every referenced file exists, and that every copied module only
+           imports files that were copied too.  This catches a forgotten entry
+           in the list above before a broken zip reaches the store. */
+        const manifest = JSON.parse(
+          readFileSync(path.resolve(distDir, "manifest.json"), "utf8")
+        );
+        const referenced = new Set([
+          manifest.background?.service_worker,
+          manifest.options_page,
+          manifest.options_ui?.page,
+          manifest.action?.default_popup,
+          ...(manifest.content_scripts || []).flatMap((entry) => entry.js || []),
+          ...Object.values(manifest.icons || {}),
+          ...Object.values(manifest.action?.default_icon || {}),
+        ]);
+        for (const ref of referenced) {
+          if (ref && !existsSync(path.resolve(distDir, ref))) {
+            throw new Error(
+              `[copy-extension-files] manifest references missing file: ${ref}`
+            );
+          }
+        }
+
+        const importRe = /(?:from\s+|import\s*\(\s*|import\s+)["'](\.\/[^"']+)["']/g;
+        for (const file of files.filter((name) => name.endsWith(".js"))) {
+          const source = readFileSync(path.resolve(distDir, file), "utf8");
+          let match;
+          while ((match = importRe.exec(source))) {
+            if (!existsSync(path.resolve(distDir, match[1]))) {
+              throw new Error(
+                `[copy-extension-files] ${file} imports missing file: ${match[1]}`
+              );
+            }
+          }
         }
       },
     },

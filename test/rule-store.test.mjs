@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   MAX_RULE_BYTES,
+  assignNumericIds,
   buildBackup,
   isNumericId,
   isRuleKey,
@@ -121,6 +122,25 @@ test("isNumericId matches the MCP server's id contract", () => {
   assert.equal(isNumericId("1".repeat(17)), false);
   assert.equal(isNumericId("https%3A%2F%2Fexample.com%2F%2A"), false);
   assert.equal(isNumericId("__proto__"), false);
+});
+
+test("id allocation never emits a 17-digit id", () => {
+  const taken = {
+    "1": validRule,
+    "9999999999999999": validRule,
+  };
+  const next = nextRuleId(taken);
+  assert.equal(isNumericId(next), true);
+  assert.equal(next, "2");
+
+  const rules = assignNumericIds({
+    "9999999999999999": validRule,
+    legacy: validRule,
+  });
+  for (const id of Object.keys(rules)) {
+    assert.equal(isNumericId(id), true, `${id} must be a valid id`);
+  }
+  assert.equal(rules["1"].url, validRule.url);
 });
 
 test("backup round-trips rules but never carries the MCP token or consent", () => {

@@ -29,12 +29,16 @@
   ],
   "author": "AnOldStory",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node --test test/*.test.mjs",
+    "prepublishOnly": "npm run version:check && npm run lint && npm test",
     "version": "node scripts/sync-version.mjs --stage",
     "version:check": "node scripts/sync-version.mjs --check",
     "store:capture": "node scripts/capture-ui.mjs",

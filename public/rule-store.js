@@ -196,20 +196,38 @@ function splitItems(items) {
  * already works changes.
  *
  * @param {object} rules
- * @returns {object} rules keyed only by `/^[1-9]\d*$/`
+ * @returns {object} rules keyed only by `/^[1-9]\d{0,15}$/`
  */
+const MAX_RULE_ID = Number.MAX_SAFE_INTEGER; // 16 digits, same contract as isNumericId
+
+function nextFreeId(taken, start) {
+  let candidate = start;
+  if (!Number.isInteger(candidate) || candidate < 1 || candidate > MAX_RULE_ID) {
+    candidate = 1;
+  }
+  while (taken.has(String(candidate))) {
+    candidate = candidate >= MAX_RULE_ID ? 1 : candidate + 1;
+  }
+  return candidate;
+}
+
 export function assignNumericIds(rules) {
-  const numeric = Object.keys(rules || {}).filter(isNumericId);
-  let next = numeric.length ? Math.max(...numeric.map(Number)) + 1 : 1;
+  const entries = Object.entries(rules || {});
+  const taken = new Set(entries.map(([id]) => id));
+  const numeric = entries
+    .filter(([id]) => isNumericId(id))
+    .map(([id]) => Number(id));
+  let next = numeric.length ? Math.max(...numeric) + 1 : 1;
 
   const out = {};
-  for (const [id, rule] of Object.entries(rules || {})) {
+  for (const [id, rule] of entries) {
     if (isNumericId(id)) {
       out[id] = rule;
       continue;
     }
-    while (out[next] || rules[String(next)]) next += 1;
+    next = nextFreeId(taken, next);
     out[String(next)] = rule;
+    taken.add(String(next));
     next += 1;
   }
   return out;
@@ -218,8 +236,27 @@ export function assignNumericIds(rules) {
 export function migrateRules(items, version) {
   const { rules, prefs } = splitItems(items);
 
+  /* A single legacy rule that no longer validates (for example a >1 MB code
+     blob from an older build) must never abort the whole migration: that
+     would leave `version` unchanged and make every later start fail, so no
+     rule runs at all.  Drop only the offending rule. */
+  const valid = {};
+  let count = 0;
+  for (const [id, rule] of Object.entries(rules)) {
+    if (count >= MAX_RULES) {
+      console.warn(`[Js-Injection] migration dropped rules beyond the ${MAX_RULES} limit`);
+      break;
+    }
+    if (!validateRule(rule).ok) {
+      console.warn(`[Js-Injection] migration dropped invalid legacy rule ${id}`);
+      continue;
+    }
+    valid[id] = rule;
+    count += 1;
+  }
+
   prefs.version = version;
-  return { rules: assignNumericIds(rules), prefs };
+  return { rules: assignNumericIds(valid), prefs };
 }
 
 export async function loadAll() {
@@ -396,13 +433,13 @@ export function parseBackup(text) {
 }
 
 export function nextRuleId(rules) {
+  const taken = new Set(Object.keys(rules || {}));
   let max = 0;
-  for (const key of Object.keys(rules || {})) {
-    if (!isRuleKey(key)) continue;
-    const value = Number(key);
-    if (Number.isInteger(value) && value > max && value < Number.MAX_SAFE_INTEGER) max = value;
+  for (const key of taken) {
+    if (!isNumericId(key)) continue;
+    max = Math.max(max, Number(key));
   }
-  return String(max + 1);
+  return String(nextFreeId(taken, max + 1));
 }
 
 /**
@@ -461,7 +498,7 @@ export async function appendAudit(entry) {
   const log = Array.isArray(items.__mcpAudit) ? items.__mcpAudit : [];
   /* A rule can throw an arbitrarily long error string; keeping it verbatim
      would let one failure fill the 10 MB storage quota. */
-  const safe = { at: Date.now(), ...entry };
+  const safe = { ...(isPlainObject(entry) ? entry : {}), at: Date.now() };
   if (typeof safe.error === "string") safe.error = safe.error.slice(0, 500);
   if (typeof safe.url === "string") safe.url = safe.url.slice(0, 2048);
   if (typeof safe.action === "string") safe.action = safe.action.slice(0, 64);

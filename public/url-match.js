@@ -134,13 +134,21 @@ export function compileRulePattern(pattern) {
   const scheme = match[1].toLowerCase();
   if (scheme !== "*" && !SUPPORTED_SCHEMES.has(scheme)) return null;
 
-  /* file:///path has an empty authority; everything else needs a host. */
+  /* file:///path has an empty authority; file://server/share names a host.
+     Match the host exactly so a rule written for a local path does not also
+     run on a UNC/remote file (and vice versa). */
   if (scheme === "file") {
     const filePath = normalizePath(match[3] === undefined ? "/*" : match[3]);
     if (filePath === null) return null;
+    if (/[\s%@#?\\]/.test(match[2])) return null;
+
+    const fileHost = match[2].toLowerCase();
+    const hostRe =
+      fileHost === "*" ? /^.*$/ : new RegExp("^" + escapeRegExp(fileHost) + "$");
+
     return {
       scheme,
-      hostRe: /^.*$/,
+      hostRe,
       port: "",
       pathGlob: filePath,
     };

@@ -7,7 +7,7 @@ import { clearAllDrafts } from "store/session";
 import { setGlobalEnabled } from "store/modules/lists";
 import { buildBackup, isRuleKey, parseBackup, replaceAll } from "shared/rule-store";
 import { isInjectableUrl, matchesRule } from "shared/url-match";
-import { DEFAULT_MCP_URL, normalizeLoopbackUrl } from "shared/mcp-url";
+import { DEFAULT_MCP_URL, MAX_MCP_TOKEN_LENGTH, normalizeLoopbackUrl } from "shared/mcp-url";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -128,6 +128,20 @@ function MainContainer() {
   };
 
   const handleToggleMcp = () => {
+    /* Disconnecting must always work, even if the URL field was cleared or the
+       token was deleted: validation is only relevant for connecting. */
+    if (mcpEnabled) {
+      setErr("");
+      setBusy(true);
+      chrome.storage.local.set({ __mcpEnabled: false }, () => {
+        void chrome.runtime.lastError;
+        setMcpEnabled(false);
+        setMcpConnected(false);
+        setBusy(false);
+      });
+      return;
+    }
+
     const normalized = normalizeLoopbackUrl(mcpUrl);
     if (!normalized) {
       setErr(t("mcpInvalidUrl"));
@@ -139,19 +153,21 @@ function MainContainer() {
       setErr(t("mcpTokenRequired"));
       return;
     }
+    if (token.length > MAX_MCP_TOKEN_LENGTH) {
+      setErr(t("mcpTokenTooLong"));
+      return;
+    }
 
-    const nextState = !mcpEnabled;
     setErr("");
     setBusy(true);
 
     chrome.storage.local.set(
-      { __mcpUrl: normalized, __mcpToken: token, __mcpEnabled: nextState },
+      { __mcpUrl: normalized, __mcpToken: token, __mcpEnabled: true },
       () => {
         void chrome.runtime.lastError;
         setMcpUrl(normalized);
-        setMcpEnabled(nextState);
+        setMcpEnabled(true);
         setBusy(false);
-        if (!nextState) setMcpConnected(false);
       }
     );
   };
@@ -532,6 +548,7 @@ function MainContainer() {
                     value={mcpToken}
                     onChange={(e) => setMcpToken(e.target.value.trim())}
                     placeholder={t("mcpTokenPlaceholder")}
+                    maxLength={MAX_MCP_TOKEN_LENGTH}
                     spellCheck={false}
                     autoComplete="off"
                     style={{
